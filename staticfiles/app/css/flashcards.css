@@ -3,124 +3,114 @@ body {
     margin: 0;
     padding: 0;
     background-color: #fff;
-    overflow: hidden; /* Prevent body overflow */
+    overflow: hidden;
 }
 
-/* Content area styling */
 .container {
-    margin-left: 200px; /* Offset for the sidebar */
-    margin-top: 20px; /* Space at the top */
-    height: calc(100vh - 40px); /* Adjust height */
-    display: flex; /* Use flexbox */
-    justify-content: center; /* Center content horizontally */
-    align-items: flex-start; /* Align items to the top */
+    margin-left: 200px;
+    margin-top: 20px;
+    height: calc(100vh - 40px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }
 
-/* Flashcard list styles */
 .flashcard-list {
-    width: 50%; /* Adjust the width as needed */
+    width: 50%;
     background-color: #fff;
     border-right: 1px solid #ccc;
-    padding: 1px; /* Padding for the flashcard list */
-    overflow-y: auto; /* Allow vertical scrolling */
-    max-height: calc(100vh - 60px); /* Limit height to viewport height minus top padding */
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: #007bff transparent; /* Firefox scrollbar colors */
-    display: flex; /* Use flexbox */
-    flex-direction: column; /* Stack children vertically */
-    margin-top: 10px; /* Space above the scrollbar */
+    padding: 1px;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    scrollbar-width: thin;
+    scrollbar-color: #007bff transparent;
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
 }
 
-/* Custom scrollbar for WebKit browsers */
 .flashcard-list::-webkit-scrollbar {
-    width: 12px; /* Width of the scrollbar */
+    width: 12px;
 }
 
 .flashcard-list::-webkit-scrollbar-thumb {
-    background-color: #007bff; /* Color of the scrollbar handle */
-    border-radius: 6px; /* Rounded corners for the scrollbar handle */
+    background-color: #007bff;
+    border-radius: 6px;
 }
 
-/* Heading styles */
 .flashcard-list h2 {
-    margin: 0 0 10px; /* Reduced bottom margin to minimize space */
+    margin: 0 0 10px;
 }
 
-/* Flashcard item styles */
 .flashcard-item {
-    display: flex; /* Use flexbox for columns */
-    justify-content: space-between; /* Evenly space columns */
-    align-items: center; /* Center items vertically */
-    padding: 5px 10px; /* Reduced padding for a tighter layout */
-    border: 1px solid #ddd; /* Border around each item */
-    background-color: #f9f9f9; /* Light background color */
-    cursor: pointer; /* Pointer cursor on hover */
-    transition: background-color 0.3s; /* Smooth transitions */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-/* Change background color on hover */
 .flashcard-item:hover {
-    background-color: #e9ecef; /* Light gray on hover */
+    background-color: #e9ecef;
 }
 
-/* Change background color when active (clicked) */
 .flashcard-item:active {
-    background-color: #007bff; /* Primary color when clicked */
-    color: white; /* Change text color */
+    background-color: #007bff;
+    color: white;
 }
 
 .flashcard-item.active {
-    background-color: #007bff; /* Gray color when active */
-    color: white; /* Change text color to white */
+    background-color: #007bff;
+    color: white;
 }
 
-/* Flashcard detail styles */
 .flashcard-detail {
-    width: 55%; /* Adjust the width as needed */
+    width: 55%;
     padding: 20px;
     display: flex;
-    flex-direction: column; /* Stack elements vertically */
+    flex-direction: column;
 }
 
 .flashcard-column {
-    flex: 1; /* Each column takes up equal space */
-    padding: 0 5px; /* Horizontal padding between columns */
+    flex: 1;
+    padding: 0 5px;
 }
 
 .word-column {
-    flex-basis: 100px; /* Fixed width for the word column */
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-basis: 100px;
+    flex-shrink: 0;
 }
 
 .other-column {
-    flex-basis: 40px; /* Fixed width for the other property column */
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-basis: 40px;
+    flex-shrink: 0;
 }
 
 .separator {
-    width: 1px; /* Width of the separator line */
-    background-color: #ccc; /* Color of the separator */
-    height: 20px; /* Height of the separator line */
-    margin: 0 10px; /* Space around the separator */
+    width: 1px;
+    background-color: #ccc;
+    height: 20px;
+    margin: 0 10px;
 }
 
-/* Textarea styles */
 textarea {
     width: 100%;
     padding: 10px 15px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    resize: none; /* Disable resizing */
-    box-sizing: border-box; /* Ensure padding is included in width */
+    resize: none;
+    box-sizing: border-box;
 }
 
 .button-container {
-    display: flex; /* Use flexbox for centering */
-    justify-content: center; /* Center the button horizontally */
-    margin-top: 15px; /* Space above the button */
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
 }
 
-/* Button styles */
 button {
     padding: 10px 20px;
     background-color: #007bff;
@@ -128,9 +118,9 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s; /* Smooth transition */
+    transition: background-color 0.3s;
 }
 
 button:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    background-color: #0056b3;
 }

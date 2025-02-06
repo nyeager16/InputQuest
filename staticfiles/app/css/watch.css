@@ -10,7 +10,7 @@ body {
 }
 
 .container {
-    margin-left: 200px; /* Offset for the sidebar */
+    margin-left: 200px;
     padding: 20px;
     border-radius: 12px;
     max-width: 400px;

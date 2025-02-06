@@ -2,17 +2,25 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background-color: #fff;
 }
 
-/* Main content area */
 .content {
-    margin-left: 200px; /* Offset for the sidebar */
+    margin-left: 200px;
     padding: 20px;
     text-align: center;
 }
 
-/* Modern button styles */
+#player {
+    width: 100%;
+    max-width: 800px;
+    height: 450px;
+    margin: 20px auto;
+    border: none;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
 .navigation-controls {
     display: flex;
     align-items: center;

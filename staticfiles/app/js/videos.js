@@ -1,10 +1,3 @@
-var rangeSlider = document.getElementById('range-slider');
-var minComprehensionInput = document.getElementById('min-comprehension');
-var maxComprehensionInput = document.getElementById('max-comprehension');
-
-var minComprehensionValue = parseFloat(minComprehensionInput.value); // Default to 0 if not a valid number
-var maxComprehensionValue = parseFloat(maxComprehensionInput.value); // Default to 100 if not a valid number
-
 // from: https://docs.djangoproject.com/en/5.1/howto/csrf/
 function getCookie(name) {
     let cookieValue = null;
@@ -23,68 +16,76 @@ function getCookie(name) {
 }
 const csrftoken = getCookie('csrftoken');
 
-// Initialize noUiSlider with two handles
-noUiSlider.create(rangeSlider, {
-    start: [minComprehensionValue, maxComprehensionValue], // Initial values
-    connect: true,
-    range: {
-        'min': 0,
-        'max': 100
-    },
-    step: 1, // Increment step
-    tooltips: true, // Show tooltips on hover
-    format: {
-        to: function (value) {
-            return Math.round(value); // Format to integer
-        },
-        from: function (value) {
-            return Number(value);
-        }
-    }
-});
-
-// Update the displayed values and hidden input fields when the slider is updated
-rangeSlider.noUiSlider.on('update', function(values, handle) {
-    var minVal = values[0];
-    var maxVal = values[1];
-
-    // Update hidden form inputs
-    minComprehensionInput.value = minVal;
-    maxComprehensionInput.value = maxVal;
-});
-
-document.getElementById('filter-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    // Get the slider values
-    var minVal = minComprehensionInput.value;
-    var maxVal = maxComprehensionInput.value;
-
-    // Send the AJAX request
-    fetch(updateComprehensionUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: JSON.stringify({
-            'min_comprehension': minVal,
-            'max_comprehension': maxVal
-        })
-    })
-    .then(response => {
-        if (response.ok) {
-            // If the request was successful, refresh the page
-            location.reload();
-        } else {
-            // Handle error case if necessary
-            console.error('Request failed:', response.statusText);
-        }
-    })
-    .catch(error => {
-        console.error('There was a problem with the fetch operation:', error);
-    });
-});
 document.addEventListener('DOMContentLoaded', function () {
+    var rangeSlider = document.getElementById('range-slider');
+    var minComprehensionInput = document.getElementById('min-comprehension');
+    var maxComprehensionInput = document.getElementById('max-comprehension');
+
+    var minComprehensionValue = parseFloat(minComprehensionInput.value);
+    var maxComprehensionValue = parseFloat(maxComprehensionInput.value);
+
+    // Initialize noUiSlider with two handles
+    noUiSlider.create(rangeSlider, {
+        start: [minComprehensionValue, maxComprehensionValue], // Initial values
+        connect: true,
+        range: {
+            'min': 0,
+            'max': 100
+        },
+        step: 1, // Increment step
+        tooltips: true, // Show tooltips on hover
+        format: {
+            to: function (value) {
+                return Math.round(value); // Format to integer
+            },
+            from: function (value) {
+                return Number(value);
+            }
+        }
+    });
+
+    // Update the displayed values and hidden input fields when the slider is updated
+    rangeSlider.noUiSlider.on('update', function(values, handle) {
+        var minVal = values[0];
+        var maxVal = values[1];
+
+        // Update hidden form inputs
+        minComprehensionInput.value = minVal;
+        maxComprehensionInput.value = maxVal;
+    });
+
+    document.getElementById('filter-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        // Get the slider values
+        var minVal = minComprehensionInput.value;
+        var maxVal = maxComprehensionInput.value;
+    
+        // Send the AJAX request
+        fetch(updateComprehensionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                'min_comprehension': minVal,
+                'max_comprehension': maxVal
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                // If the request was successful, refresh the page
+                location.reload();
+            } else {
+                // Handle error case if necessary
+                console.error('Request failed:', response.statusText);
+            }
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+    });
+
     let page = 1;
     const videoGrid = document.getElementById('video-grid');
     let isLoading = false;

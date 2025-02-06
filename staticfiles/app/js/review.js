@@ -37,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentWordIndex < words.length) {
             const word = words[currentWordIndex];
             const definition = definitions[currentWordIndex];
-            wordDisplay.innerHTML = word.word__word_text;  // Use the correct field from JSON data
-            answerDisplay.innerHTML = definition; // Assuming you're showing the word definition here
+            wordDisplay.innerHTML = word.word__word_text;
+            answerDisplay.innerHTML = definition;
             answerDisplay.style.display = 'none'; // Hide answer
             showAnswerBtn.style.display = 'block'; // Show "Show Answer" button
             ratingsContainer.style.display = 'none'; // Hide rating buttons
@@ -70,7 +70,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Function to edit the definition
     function editDefinition() {
         // Get the current definition text
         const definitionText = answerDisplay.innerHTML;
@@ -83,7 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
         saveChangesBtn.style.display = 'inline';
     }
 
-    // Function to save the new definition
     function saveChanges() {
         const definitionInput = document.getElementById('definitionInput');
         const newDefinition = definitionInput.value;

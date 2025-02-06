@@ -14,6 +14,7 @@ from .tasks import calculate_video_CI
 from .utils import setup_user, get_video_data, get_CI_video_sections, add_words
 import json
 from deep_translator import GoogleTranslator
+from fsrs import Scheduler, Card, Rating, ReviewLog
 
 def all_videos(request):
     # Check if the user is authenticated
@@ -70,6 +71,7 @@ def all_videos(request):
         'message': message,
     })
 
+@login_required(login_url="/app/login/")
 def update_queue_ci(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -225,9 +227,13 @@ class VideoDetailView(View):
 @login_required(login_url="/app/login/")
 def review(request):
     user = request.user
-    
-    words_to_review = UserWord.objects.filter(user=user, needs_review=True, next_review__lte=now())
-    
+    # flash = UserWord.objects.filter(user=user).first()
+    # carddata = flash.load_card()
+    # carddata.due = now()
+    # flash.save_card(carddata)
+    words_to_review = UserWord.objects.filter(user=user, needs_review=True, data__due__lte=now().isoformat())
+    #words_to_review = UserWord.objects.filter(user=user, needs_review=True, next_review__lte=now())
+    print(words_to_review)
     if not words_to_review.exists():
         message = "No Words to Review."
         words_data = []
@@ -259,14 +265,25 @@ def review(request):
 @login_required(login_url="/app/login/")
 def submit_review(request, word_id, rating):
     if request.method == 'POST':
+        if rating == 0:
+            fsrs_rating = Rating.Again
+        else:
+            fsrs_rating = Rating.Good
         """
         Handles the submission of the user's review for a word.
         Rating is passed in (from 0 to 4) and used to update the review schedule.
         """
-        user_word = UserWord.objects.get(id=word_id, user=request.user)
+        user = request.user
+        user_preferences = UserPreferences.objects.filter(user=user).first()
+        desired_retention = user_preferences.desired_retention
+        user_word = UserWord.objects.get(id=word_id, user=user)
         
-        # Update the review schedule using FSRS
-        user_word.update_review_schedule(rating)
+        scheduler = Scheduler(desired_retention=desired_retention)
+        card = user_word.load_card()
+        card, _ = scheduler.review_card(card, fsrs_rating)
+        
+        user_word.save_card(card)
+
         return JsonResponse({'status': 'success'})
 
 @login_required(login_url="/app/login/")

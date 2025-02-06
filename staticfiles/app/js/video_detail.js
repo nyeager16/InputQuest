@@ -28,6 +28,7 @@ document.querySelectorAll('.word').forEach(wordElement => {
 
         // Get child words for the selected root word
         const rootWord = selectedWordElement.getAttribute('data-word');
+        const rootWordId = selectedWordElement.getAttribute('data-word-id');
         if (rootWord && rootWord.trim() !== '') {
             // Set the "Learn" button's href to include the selected root word
             const learnUrl = learnWordUrlTemplate.replace("root_word", rootWord);
@@ -37,10 +38,10 @@ document.querySelectorAll('.word').forEach(wordElement => {
             document.getElementById('learn-button').setAttribute('href', '#');
         }
 
-        const childWords = childWordsMapping[rootWord] || [];  // Use the dynamic child words mapping
+        const childWords = childWordsMapping[rootWordId] || [];
 
         // Update the hidden input value with the selected word ID
-        wordIdInput.value = rootWord;
+        wordIdInput.value = rootWordId;
 
         // Display the child words
         childWords.forEach(child => {

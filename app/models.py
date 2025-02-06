@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.timezone import now
 from datetime import timedelta
+from fsrs import Scheduler, Card, ReviewLog
 
 class Language(models.Model):
     name = models.CharField(max_length=100)
@@ -59,6 +60,7 @@ class UserPreferences(models.Model):
     comprehension_level_min = models.IntegerField(default=0)
     comprehension_level_max = models.IntegerField(default=100)
     queue_CI = models.IntegerField(default=100)
+    desired_retention = models.FloatField(default=0.9)
 
 class Definition(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
@@ -72,39 +74,18 @@ class UserWord(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
     needs_review = models.BooleanField(default=True)
-    interval = models.FloatField(default=1.0)
-    repetitions = models.IntegerField(default=0)
-    ease_factor = models.FloatField(default=2.5)
-    next_review = models.DateTimeField(default=now)
 
-    def update_review_schedule(self, rating):
-        """
-        Update the next review date and interval based on the user's rating.
-        Rating system: 0 = Again, 1 = Hard, 2 = Good, 3 = Easy
-        """
+    def default_card_data():
+        return Card().to_dict()
 
-        if rating == 0:  # Again
-            self.repetitions = 0
-            self.interval = 1
-            self.ease_factor = max(1.3, self.ease_factor - 0.2)
+    data = models.JSONField(default=default_card_data)
 
-        elif rating == 1:  # Hard
-            self.interval = max(1, int(self.interval * 1.2))
-            self.ease_factor = max(1.3, self.ease_factor - 0.15)
-
-        elif rating == 2:  # Good
-            self.repetitions += 1
-            self.interval = int(self.interval * self.ease_factor)
-            self.ease_factor = max(1.3, self.ease_factor)
-
-        elif rating == 3:  # Easy
-            self.repetitions += 1
-            self.interval = int(self.interval * self.ease_factor * 1.5)
-            self.ease_factor += 0.1
-
-        # Schedule the next review
-        self.next_review = timezone.now() + timedelta(days=self.interval)
+    def save_card(self, card):
+        self.data = card.to_dict()
         self.save()
+
+    def load_card(self):
+        return Card.from_dict(self.data)
 
     def __str__(self):
         return f"{self.user.username} - {self.word.word_text}"
@@ -112,7 +93,6 @@ class UserWord(models.Model):
 class Review(models.Model):
     user_word = models.ForeignKey(UserWord, on_delete=models.CASCADE)
     review_time = models.DateTimeField(auto_now_add=True)
-    response_time = models.FloatField()  # Time taken to answer, in seconds
     correct = models.BooleanField()  # Whether the user answered correctly
     familiarity_score_before = models.FloatField()  # Familiarity score before review
     familiarity_score_after = models.FloatField()  # Familiarity score after review

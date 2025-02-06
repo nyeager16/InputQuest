@@ -7,7 +7,7 @@ body, html {
 }
 
 .content {
-    margin-left: 200px; /* Offset for the sidebar */
+    margin-left: 200px;
     padding: 20px;
 }
 

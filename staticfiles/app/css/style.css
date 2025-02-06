@@ -2,12 +2,26 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #fff; /* White background */
+    background-color: #fff;
+}
+
+.content {
+    margin-left: 200px;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: none;
 }
 
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* Default: 3 videos per row */
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
@@ -15,7 +29,7 @@ body {
     background-color: white;
     padding: 10px;
     border-radius: 8px;
-    border: none; /* Remove border from the video item */
+    border: none;
 }
 
 .thumbnail-wrapper {
@@ -25,7 +39,7 @@ body {
     background-color: #000;
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 10px; /* Add more spacing between thumbnail and title */
+    margin-bottom: 10px;
 }
 
 .thumbnail-wrapper img {
@@ -41,107 +55,115 @@ body {
 .video-info {
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* Align items to the start */
+    justify-content: flex-start;
     margin-top: 10px;
 }
 
 .percentage {
-    width: 40px; /* Fixed width for circle */
-    height: 40px; /* Fixed height for circle */
-    min-width: 40px; /* Prevent shrinking */
-    min-height: 40px; /* Prevent shrinking */
-    border-radius: 50%; /* Make it circular */
-    border: 2px solid black; /* Black border */
-    display: flex; /* Use flexbox to center text */
-    align-items: center; /* Center vertically */
-    justify-content: center; /* Center horizontally */
-    margin-right: 10px; /* Spacing between percentage and title */
-    box-sizing: border-box; /* Include border in width and height */
-    flex: 0 0 auto; /* Prevent growing and shrinking */
-    background-color: white; /* Set background color to white */
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+    border: 2px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    background-color: white;
 }
 
 .title {
     font-size: 16px;
     color: #333;
-    text-align: left; /* Align title to the left */
+    text-align: left;
     flex-grow: 1;
-    overflow: hidden; /* Hide overflow */
-    text-overflow: ellipsis; /* Show ellipsis when overflow */
-    display: -webkit-box; /* Use flexbox model */
-    -webkit-box-orient: vertical; /* Vertical orientation for box */
-    -webkit-line-clamp: 2; /* Limit to 2 lines */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .noUi-handle::before,
 .noUi-handle::after {
-    display: none !important; /* Hide any pseudo-elements like ::before and ::after */
+    display: none !important;
 }
 
-/* Slider handle styling */
 .noUi-handle {
-    background-color: #009688; /* Purple handle (or any modern color) */
-    width: 18px; /* Small but visible handle width */
-    height: 18px; /* Slightly taller than wide for a clean circular look */
-    border-radius: 50%; /* Fully rounded for a sleek, minimalist design */
-    box-shadow: none; /* No shadow for a flat design */
-    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth color and scale transitions */
+    background-color: #444;
+    box-shadow: none;
 }
 
 .noUi-connect {
-    background-color: #009688; /* Purple active track */
+    background-color: #444;
     height: 6px;
 }
 
 .noUi-base {
-    background-color: #ddd; /* Light gray base */
     height: 6px;
     border-radius: 4px;
 }
 
 .noUi-tooltip {
-    background-color: #009688;
+    background-color: #444;
     color: white;
     padding: 5px;
     border-radius: 4px;
     font-size: 13px;
 }
 
-/* Responsive Styles */
-@media (max-width: 1200px) { /* Medium screens */
-    .video-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 videos per row */
-    }
+#filter-form {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
 }
 
-@media (max-width: 800px) { /* Small screens */
+#range-slider {
+    margin-bottom: 15px;
+    max-width: 500px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#filter-form button {
+    background-color: #444;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#filter-form button:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 1200px) {
     .video-grid {
-        grid-template-columns: 1fr; /* 1 video per row */
+        grid-template-columns: repeat(2, 1fr);
     }
-
+}
+  
+@media (max-width: 800px) {
+    .video-grid {
+        grid-template-columns: 1fr;
+    }
+  
     .video-info {
-        flex-direction: row; /* Keep in row layout */
-        align-items: center; /* Center align */
+        flex-direction: row;
+        align-items: center;
     }
-
+  
     .title {
-        text-align: left; /* Align text to the left */
+        text-align: left;
         margin-left: 0;
     }
-}
-
-.content {
-    margin-left: 200px; /* Offset for the sidebar */
-    padding: 20px;
-}
-
-.container {
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: none;
 }
 
 #learn-button {
@@ -216,11 +238,10 @@ iframe {
     font-size: 14px;
 }
 
-/* Buttons styling */
 .buttons-container {
     display: flex;
-    justify-content: center; /* Center buttons horizontally */
-    gap: 20px; /* Space between the buttons */
+    justify-content: center;
+    gap: 20px;
     margin-top: 30px;
 }
 
@@ -243,10 +264,3 @@ iframe {
 .action-button:active {
     transform: scale(0.95);
 }
-
-
-
-
-
-
-

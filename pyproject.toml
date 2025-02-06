@@ -18,6 +18,7 @@ scrapetube = "^2.5.1"
 deep-translator = "^1.11.4"
 django4-background-tasks = "^1.2.10"
 torch = "^2.5.1"
+fsrs = "^5.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

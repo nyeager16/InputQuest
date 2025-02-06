@@ -2,15 +2,18 @@ var player;
 var currentIndex = 0;
 
 function onPlayerReady(event) {
-    console.log("Player is ready");
+    console.log("YouTube player is ready.");
     updateButtonLabel();
 }
 
-// Initialize YouTube Player
+// Function to initialize YouTube player when API is ready
 function onYouTubeIframeAPIReady() {
-    // Check if player already exists and destroy if necessary
-    if (player && player.destroy) {
+    if (player) {
         player.destroy();
+    }
+
+    if (!document.getElementById('player')) {
+        return;
     }
 
     player = new YT.Player('player', {
@@ -20,19 +23,19 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
-// Ensure the API loads and initializes correctly
-function reloadYouTubePlayer() {
+// Ensure YouTube API script is loaded before initialization
+function loadYouTubeAPI() {
     if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
         const script = document.createElement('script');
         script.src = "https://www.youtube.com/iframe_api";
         document.body.appendChild(script);
+        script.onload = function () {
+            console.log("YouTube API script loaded.");
+        };
     } else {
         onYouTubeIframeAPIReady();
     }
 }
-
-// Call reloadYouTubePlayer on page load
-window.onload = reloadYouTubePlayer;
 
 // Function to skip to the current timestamp
 function skipToCurrent() {
@@ -62,8 +65,17 @@ function nextTimestamp() {
 // Update button label with the current word
 function updateButtonLabel() {
     const button = document.querySelector('.nav-button:nth-child(2)');
-    button.innerText = `Skip to "${timestamps[currentIndex].word}"`;
+    if (button && timestamps[currentIndex]) {
+        button.innerText = `Skip to "${timestamps[currentIndex].word}"`;
+    }
 }
 
-// Set initial button label
-document.addEventListener('DOMContentLoaded', updateButtonLabel);
+// Initialize YouTube Player on DOM content loaded
+document.addEventListener('DOMContentLoaded', function () {
+    loadYouTubeAPI();
+    updateButtonLabel();
+
+    document.querySelector('.nav-button:nth-child(1)').onclick = previousTimestamp;
+    document.querySelector('.nav-button:nth-child(2)').onclick = skipToCurrent;
+    document.querySelector('.nav-button:nth-child(3)').onclick = nextTimestamp;
+});

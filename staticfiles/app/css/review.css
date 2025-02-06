@@ -6,26 +6,24 @@ body {
     overflow: hidden;
 }
 
-/* Content area styling */
 .content {
-    max-width: 600px;      /* Set a maximum width for the content */
-    margin: 0 auto;        /* Center the content block horizontally */
-    display: flex;         /* Enable flexbox */
-    flex-direction: column; /* Stack children vertically */
-    justify-content: center; /* Center vertically */
-    align-items: center;   /* Center horizontally */
-    text-align: center;    /* Center text inside the content */
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
-/* Center content */
 .container {
-    margin-left: 220px; /* Offset for the sidebar */
+    margin-left: 220px;
     padding: 20px;
     position: relative; 
-    height: 100vh; /* Full viewport height */
-    display: flex; /* Use flexbox */
-    justify-content: center; /* Center content horizontally */
-    align-items: center; /* Center content vertically */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .word-display {
@@ -37,7 +35,7 @@ body {
 .answer {
     font-size: 24px;
     margin-bottom: 20px;
-    display: none; /* Initially hidden */
+    display: none;
 }
 
 .show-answer-btn, .rating-btn {
@@ -73,20 +71,20 @@ body {
 }
 
 .edit-flashcard-link {
-    text-decoration: none; /* Remove underline */
+    text-decoration: none;
 }
 
 .button-container {
-    position: absolute; /* Position absolutely within the content */
+    position: absolute;
     bottom: 100px;
-    display: flex; /* Use flexbox for positioning */
-    justify-content: space-between; /* Space buttons to the left and right */
-    width: 50%; /* Full width */
-    margin-top: auto; /* Push to the bottom of the content */
-    padding: 10px 0; /* Add some padding */
+    display: flex;
+    justify-content: space-between;
+    width: 50%;
+    margin-top: auto;
+    padding: 10px 0;
 }
 
 .ratings-container {
-    display: none; /* Initially hidden */
+    display: none;
     margin-top: 20px;
 }
