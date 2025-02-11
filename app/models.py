@@ -61,6 +61,7 @@ class UserPreferences(models.Model):
     comprehension_level_max = models.IntegerField(default=100)
     queue_CI = models.IntegerField(default=100)
     desired_retention = models.FloatField(default=0.9)
+    vocab_filter = models.IntegerField(default=0)
 
 class Definition(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)

@@ -413,9 +413,30 @@ def learn_word(request, word):
 
 @login_required(login_url="/app/login/")
 def flashcards(request):
+    if request.method == "POST":
+        user = request.user
+        user_preferences = UserPreferences.objects.get(user=user)
+
+        if user_preferences.vocab_filter == 0:
+            user_preferences.vocab_filter = 1
+            user_preferences.save()
+        elif user_preferences.vocab_filter == 1:
+            user_preferences.vocab_filter = 0
+            user_preferences.save()
+
+        return JsonResponse({'status': 'success'})
+
     if request.user.is_authenticated:
         user = request.user
-        user_words = UserWord.objects.filter(user=user).select_related('word')
+        user_preferences = UserPreferences.objects.get(user=user)
+        filter_message = "Filter"
+
+        if user_preferences.vocab_filter == 0:
+            user_words = UserWord.objects.filter(user=user).select_related('word').order_by('word__word_text')
+            filter_message = "Alphabetical Order"
+        elif user_preferences.vocab_filter == 1:
+            user_words = UserWord.objects.filter(user=user).select_related('word').order_by('-id')
+            filter_message = "Last Added"
         
         words_with_definitions = []
 
@@ -431,4 +452,4 @@ def flashcards(request):
                 'definition_text': definition.definition_text,
             })
 
-    return render(request, 'flashcards.html', {'words': words_with_definitions})
+    return render(request, 'flashcards.html', {'words': words_with_definitions, 'filter_message': filter_message})

@@ -17,6 +17,7 @@
     <div class="container">
         <div class="flashcard-list">
             <ul id="wordList">
+                <li id="filterButton" class="flashcard-item">{{ filter_message }}</li>
                 {% for word in words %}
                     <li class="flashcard-item" data-id="{{ word.id }}" data-definition="{{ word.definition_text }}">
                         <div class="flashcard-column word-column">{{ word.word_text }}</div>

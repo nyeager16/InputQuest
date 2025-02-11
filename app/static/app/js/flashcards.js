@@ -77,3 +77,27 @@ document.getElementById('saveButton').addEventListener('click', function (event)
             alert('An unexpected error occurred.');
         });
 });
+
+document.getElementById('filterButton').addEventListener('click', function () {
+    console.log('Filter button clicked');
+
+    fetch('/app/account/flashcards', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Filter applied, reloading page...');
+            location.reload();
+        } else {
+            alert('Filtering failed. Try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while filtering.');
+    });
+});
