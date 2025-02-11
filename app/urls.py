@@ -19,14 +19,15 @@ urlpatterns = [
     path('learn/', views.learn, name='learn'),
     path('learn/<str:word>/', views.learn_word, name='learn_word'),
 
-    path('review/', views.review, name="review"),
+    path('review/', views.review, name='review'),
     path('review/<int:word_id>/submit/<int:rating>/', views.submit_review, name='submit_review'),
     path('review/<int:word_id>/change/<str:needs_review>/', views.change_review, name='change_review'),
 
-    path("account/", views.account, name="account"),
-    path("account/flashcards", views.flashcards, name="flashcards"),
+    path('account/', views.account, name='account'),
+    path('account/flashcards', views.flashcards, name='flashcards'),
+    path('add_words/', views.add_common_words, name='add_common_words'),
 
-    path("about/", views.about, name="about"),
+    path('about/', views.about, name='about'),
     
     path('update-definition/<int:word_id>/', views.update_definition, name='update_definition'),
 ]

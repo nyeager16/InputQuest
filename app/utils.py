@@ -1,4 +1,6 @@
 from .models import Language, Word, WordInstance, UserWord, UserVideo, Video, UserPreferences, Definition
+from django.db import models
+from django.db.models import Case, When, Count, F
 from django.db.models.functions import Coalesce
 from .tasks import add_definitions
 
@@ -9,12 +11,43 @@ def setup_user(user):
     language = Language.objects.get(abb="pl")
     UserPreferences(user=user, language=language).save()
 
+def get_common_words(user):
+    user_preferences = UserPreferences.objects.filter(user=user).first()
+    user_language = user_preferences.language
+
+    common_words = (
+        WordInstance.objects
+        .filter(video__language=user_language)
+        .annotate(
+            # For root words, use the word's text; for non-root words, use the root's text
+            root_word=Case(
+                When(word__root__isnull=True, then=F('word__word_text')), # If no root, use the word's text
+                default=F('word__root__word_text'), # Otherwise, use the root's text
+                output_field=models.CharField()
+            ),
+            root_word_id=Case(
+                When(word__root__isnull=True, then=F('word__id')), # If no root, use the word's own ID
+                default=F('word__root__id'), # Otherwise, use the root word's ID
+                output_field=models.IntegerField()
+            ),
+        )
+        .values('root_word', 'root_word_id')
+        .annotate(word_count=Count('id')) # Count occurrences
+        .order_by('-word_count') # Sort by count, descending
+    )
+
+    known_words = set(UserWord.objects.filter(user=user).values_list('word__word_text', flat=True))
+
+    new_words = [word for word in common_words if word['root_word'] not in known_words]
+
+    return new_words
+
 def add_words(user, word_ids):
     defined_word_ids = Definition.objects.filter(word_id__in=word_ids, definition_text__isnull=False).values_list('word_id', flat=True)
     undefined_word_ids = list(set(word_ids) - set(defined_word_ids))
     add_definitions(undefined_word_ids, 'pl')
     for word_id in word_ids:
-        word = Word.objects.filter(id=word_id).first()
+        word = Word.objects.get(id=word_id)
         UserWord.objects.create(user=user, word=word)
 
 def get_video_data(videos, user=None, comprehension_level_min=0, comprehension_level_max=100):

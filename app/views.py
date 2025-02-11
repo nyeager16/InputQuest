@@ -11,7 +11,7 @@ from django.db.models import Case, When, Count, F, Q
 from django.db.models.functions import Coalesce
 from .forms import SignUpForm
 from .tasks import calculate_video_CI
-from .utils import setup_user, get_video_data, get_CI_video_sections, add_words
+from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words
 import json
 from deep_translator import GoogleTranslator
 from fsrs import Scheduler, Card, Rating, ReviewLog
@@ -227,12 +227,7 @@ class VideoDetailView(View):
 @login_required(login_url="/app/login/")
 def review(request):
     user = request.user
-    # flash = UserWord.objects.filter(user=user).first()
-    # carddata = flash.load_card()
-    # carddata.due = now()
-    # flash.save_card(carddata)
     words_to_review = UserWord.objects.filter(user=user, needs_review=True, data__due__lte=now().isoformat())
-    #words_to_review = UserWord.objects.filter(user=user, needs_review=True, next_review__lte=now())
     print(words_to_review)
     if not words_to_review.exists():
         message = "No Words to Review."
@@ -334,9 +329,26 @@ def signup(request):
         form = SignUpForm()
     return render(request, 'registration/signup.html', {'form': form})
 
+@login_required(login_url="/app/login/")
 def account(request):
 
     return render(request, 'account.html')
+
+@login_required(login_url="/app/login/")
+def add_common_words(request):
+    if request.method == 'POST':
+        user = request.user
+        data = json.loads(request.body)
+        word_count = int(data.get('word_count'))
+
+        new_words = get_common_words(user)
+        new_words = new_words[:word_count]
+
+        root_word_ids = [word['root_word_id'] for word in new_words]
+        add_words(user, root_word_ids)
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error'})
 
 def about(request):
 
@@ -352,46 +364,9 @@ def learn(request):
             calculate_video_CI(user.id)
             return redirect('learn')
 
-    # Get the user's language preference
-    user_language = None
-    if request.user.is_authenticated:
-        user = request.user
-        user_preferences = UserPreferences.objects.filter(user=user).first()
-        if not user_preferences:
-            language = Language.objects.filter(abb="pl").first()
-            UserPreferences(user=user, language=language).save()
-        user_language = user_preferences.language if user_preferences else None
-
     word_count = 20
 
-    common_words = (
-        WordInstance.objects
-        .filter(video__language=user_language)
-        .annotate(
-            # For root words, use the word's text; for non-root words, use the root's text
-            root_word=Case(
-                When(word__root__isnull=True, then=F('word__word_text')), # If no root, use the word's text
-                default=F('word__root__word_text'), # Otherwise, use the root's text
-                output_field=models.CharField()
-            ),
-            root_word_id=Case(
-                When(word__root__isnull=True, then=F('word__id')), # If no root, use the word's own ID
-                default=F('word__root__id'), # Otherwise, use the root word's ID
-                output_field=models.IntegerField()
-            ),
-        )
-        .values('root_word', 'root_word_id')
-        .annotate(word_count=Count('id')) # Count occurrences
-        .order_by('-word_count') # Sort by count, descending
-    )
-
-    # Get known words only if the user is logged in
-    known_words = set()
-    if request.user.is_authenticated:
-        known_words = set(UserWord.objects.filter(user=request.user).values_list('word__word_text', flat=True))
-
-    # Filter new words that the user does not already know
-    new_words = [word for word in common_words if word['root_word'] not in known_words]
+    new_words = get_common_words(request.user)
     new_words = new_words[:word_count]
 
     return render(request, 'learn.html', {'new_words': new_words})

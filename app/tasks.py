@@ -42,6 +42,6 @@ def add_definitions(word_ids, source):
     for word_id in word_ids:
         word = Word.objects.get(id=word_id)
         translated_word = translator.translate(text=word.word_text)
-        definition = Definition.objects.get(word=word)
+        definition = Definition.objects.get(word=word, user=None)
         definition.definition_text = translated_word
         definition.save()

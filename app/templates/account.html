@@ -14,7 +14,16 @@
     {% include 'sidebar.html' %}
     {% endblock %}
     <div class="container">
-        <a href="{% url 'flashcards' %}" class="flashcard-button">Flashcards</a>
+        <h2>Next Most Common Words</h2>
+        <div class="slider-container">
+            <input type="range" min=0 max=1000 value=0 class="slider" id="sliderValue">
+            <p class="count" id="count">0</p>
+        </div>
+        <button class="button" id="add">Add to Account</button>
     </div>
+    <script>
+        var commonWords = "{% url 'add_common_words' %}";
+    </script>
+    <script src="{% static 'app/js/account.js' %}"></script>
 </body>
 </html>
