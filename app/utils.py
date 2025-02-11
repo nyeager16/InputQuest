@@ -12,7 +12,7 @@ def setup_user(user):
     UserPreferences(user=user, language=language).save()
 
 def get_common_words(user):
-    user_preferences = UserPreferences.objects.filter(user=user).first()
+    user_preferences = UserPreferences.objects.only('language').get(user=user)
     user_language = user_preferences.language
 
     common_words = (

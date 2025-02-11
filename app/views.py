@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.utils.timezone import now
 from .models import Video, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition
 from django.db import models
-from django.db.models import Case, When, Count, F, Q
+from django.db.models import Case, When, Count, F, Q, Prefetch
 from django.db.models.functions import Coalesce
 from .forms import SignUpForm
 from .tasks import calculate_video_CI
@@ -228,27 +228,27 @@ class VideoDetailView(View):
 def review(request):
     user = request.user
     words_to_review = UserWord.objects.filter(user=user, needs_review=True, data__due__lte=now().isoformat())
-    print(words_to_review)
     if not words_to_review.exists():
         message = "No Words to Review."
         words_data = []
         definitions = []
     else:
-        message = None 
+        message = None
+        # Fetch all the words and prefetch their corresponding definitions
         words_data = list(words_to_review.values('id', 'word_id', 'word__word_text'))
-        word_id = words_data[0]['word_id']
 
-        definitions = []
-        for word in words_data:
-            word_id = word['word_id']
-            try:
-                definition = Definition.objects.get(user=user, word_id=word_id)
-            except:
-                definition = Definition.objects.filter(user=None, word_id=word_id).first()
-            if definition.definition_text == None:
-                definitions.append("")
-            else:
-                definitions.append(definition.definition_text)
+        # Prefetch definitions based on the word IDs for the current user and fallback to the generic ones
+        definition_queryset = Definition.objects.filter(
+            Q(user=user) | Q(user=None),
+            word_id__in=[word['word_id'] for word in words_data]
+        )
+
+        definitions_dict = {definition.word_id: definition.definition_text for definition in definition_queryset}
+
+        definitions = [
+            definitions_dict.get(word['word_id'], "")  # Default to an empty string if no definition is found
+            for word in words_data
+        ]
 
     return render(request, 'review.html', {
         'words_data': words_data, 
@@ -322,9 +322,9 @@ def signup(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
-            user = form.save()  # Save the new user
+            user = form.save()
             setup_user(user)
-            return redirect('login')  # Redirect to the login page after sign up
+            return redirect('login')
     else:
         form = SignUpForm()
     return render(request, 'registration/signup.html', {'form': form})
@@ -346,6 +346,7 @@ def add_common_words(request):
 
         root_word_ids = [word['root_word_id'] for word in new_words]
         add_words(user, root_word_ids)
+        calculate_video_CI(user.id)
         return JsonResponse({'status': 'success'})
 
     return JsonResponse({'status': 'error'})
@@ -436,20 +437,20 @@ def flashcards(request):
             filter_message = "Alphabetical Order"
         elif user_preferences.vocab_filter == 1:
             user_words = UserWord.objects.filter(user=user).select_related('word').order_by('-id')
-            filter_message = "Last Added"
+            filter_message = "Recently Added"
         
-        words_with_definitions = []
+        definition_queryset = Definition.objects.filter(
+            Q(user=user) | Q(user=None)
+        ).order_by('user')
 
-        for user_word in user_words:
-            word = user_word.word
-            # Fetch the user's definition if available, otherwise fallback to the generic definition
-            definition = Definition.objects.filter(word=word).filter(
-                Q(user=user) | Q(user=None)
-            ).order_by('user').first()
-            words_with_definitions.append({
-                'id': word.id,
-                'word_text': word.word_text,
-                'definition_text': definition.definition_text,
-            })
+        words_with_definitions = user_words.prefetch_related(
+            Prefetch('word__definition_set', queryset=definition_queryset, to_attr='user_definitions')
+        )
 
-    return render(request, 'flashcards.html', {'words': words_with_definitions, 'filter_message': filter_message})
+        result = [{
+            'id': user_word.word.id,
+            'word_text': user_word.word.word_text,
+            'definition_text': user_word.word.user_definitions[0].definition_text if user_word.word.user_definitions else 'No definition available',
+        } for user_word in words_with_definitions]
+
+    return render(request, 'flashcards.html', {'words': result, 'filter_message': filter_message})
