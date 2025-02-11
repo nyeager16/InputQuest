@@ -8,9 +8,9 @@
     <a href="{% url 'learn' %}">Learn</a>
     <a href="{% url 'review' %}">Review</a>
     <a href="{% url 'flashcards' %}">My Vocab</a>
-    <a href="{% url 'account' %}">Account</a>
     <a href="{% url 'about' %}">About</a>
     {% if user.is_authenticated %}
+    <a href="{% url 'account' %}">Account</a>
     <form action="{% url 'logout' %}" method="POST" style="display:inline;">
         {% csrf_token %}
         <button type="submit">Log Out</button>
