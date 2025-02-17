@@ -4,7 +4,7 @@ import scrapetube
 
 from django.utils import timezone
 from django.core.management.base import BaseCommand, CommandError
-from app.models import Word, Channel, Video, WordInstance, Language
+from app.models import Word, Channel, Video, WordInstance, Language, UserVideo, User
 
 
 class Command(BaseCommand):
@@ -24,10 +24,12 @@ class Command(BaseCommand):
         videos = []
         wordinstances = []
 
+        channel_name = channel_url.split("@")[-1]
         channel_videos = scrapetube.get_channel(channel_url=channel_url)
 
         channel, created = Channel.objects.get_or_create(
-            channel_url=channel_url
+            channel_url=channel_url,
+            channel_name=channel_name
         )
 
         for video in channel_videos:
@@ -72,6 +74,12 @@ class Command(BaseCommand):
 
         Video.objects.bulk_create(videos)
         WordInstance.objects.bulk_create(wordinstances)
+
+        users = User.objects.all()
+        for user in users:
+            user_videos_to_create = [UserVideo(user=user,video=video) for video in videos]
+            UserVideo.objects.bulk_create(user_videos_to_create)
+        
 
 # python manage.py ytimport "https://www.youtube.com/@EasyPolish" "pl"
 # python manage.py ytimport "https://www.youtube.com/@Robert_Maklowicz" "pl"

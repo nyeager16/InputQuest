@@ -120,6 +120,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             <a href="/app/video/${video.pk}" style="color: black; text-decoration: none;">${video.title}</a>
                         </div>
                     </div>
+                    <div class="channel">
+                        <a href="/app/channel/${video.channel_pk}">${video.channel_name}</a>
+                    </div>
                 `;
                 videoGrid.appendChild(videoItem);
             });

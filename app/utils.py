@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models import Case, When, Count, F
 from django.db.models.functions import Coalesce
 from .tasks import add_definitions
+from collections import deque
+import heapq
 
 def setup_user(user):
     videos = Video.objects.all()
@@ -45,10 +47,14 @@ def get_common_words(user):
 def add_words(user, word_ids):
     defined_word_ids = Definition.objects.filter(word_id__in=word_ids, definition_text__isnull=False).values_list('word_id', flat=True)
     undefined_word_ids = list(set(word_ids) - set(defined_word_ids))
-    add_definitions(undefined_word_ids, 'pl')
-    for word_id in word_ids:
-        word = Word.objects.get(id=word_id)
-        UserWord.objects.create(user=user, word=word)
+    if undefined_word_ids:
+        add_definitions(undefined_word_ids, 'pl')
+    words = Word.objects.filter(id__in=word_ids)
+    user_words = [UserWord(user=user, word=word) for word in words]
+    UserWord.objects.bulk_create(user_words)
+
+def remove_words(user, word_ids):
+    UserWord.objects.filter(user=user, word__id__in=word_ids).delete()
 
 def get_video_data(videos, user=None, comprehension_level_min=0, comprehension_level_max=100):
     video_data = []
@@ -64,76 +70,168 @@ def get_video_data(videos, user=None, comprehension_level_min=0, comprehension_l
             'pk': video.pk,
             'title': video.title,
             'url': video.url,
+            'channel_pk': video.channel.pk,
+            'channel_name': video.channel.channel_name,
             'comprehension_percentage': comprehension_percentage,
         })
     return video_data
 
 def get_CI_video_sections(user, percentage, count):
-    known_words = UserWord.objects.filter(user=user).values_list('word', flat=True)
-    known_words = set(known_words)
+    known_words = set(
+        UserWord.objects.filter(user=user).values_list('word', flat=True)
+    )
+    
     preferences = UserPreferences.objects.get(user=user)
     videos = Video.objects.filter(language=preferences.language).exclude(
         watch_history__user=user
-    )
-
+    ).only('id')
+    
+    word_instances = WordInstance.objects.filter(video__in=videos).annotate(
+        root_word=Coalesce('word__root', 'word')
+    ).values_list('video_id', 'root_word', 'start', 'end')
+    
+    video_words_dict = {}
+    for video_id, root_word, start, end in word_instances:
+        if video_id not in video_words_dict:
+            video_words_dict[video_id] = []
+        video_words_dict[video_id].append((root_word, float(start), float(end)))
+    
     sections = []
-
-    for video in videos:
-        video_words = (
-            WordInstance.objects
-            .filter(video=video)
-            .annotate(
-                root_word=Coalesce('word__root', 'word')
-            )
-            .values('root_word', 'start', 'end')
-        )
-
-        video_sections = []
-        n = len(video_words)
-        
-        start_idx = 0
+    
+    # Process each video's word instances using a sliding window
+    for video_id, words in video_words_dict.items():
+        queue = deque()
         known_count = 0
         total_count = 0
 
-        for end_idx in range(n):
-            # Add the current word to the counts
-            word_id = video_words[end_idx]['root_word']
+        for root_word, start, end in words:
+            queue.append((root_word, start, end))
             total_count += 1
-            if word_id in known_words:
+            if root_word in known_words:
                 known_count += 1
 
-            # Shrink the window if the percentage drops below the threshold
-            while start_idx <= end_idx:
-                current_percentage = (known_count / total_count) * 100
-                if current_percentage >= percentage:
-                    # Valid section found
-                    start_time = float(video_words[start_idx]['start'])
-                    end_time = float(video_words[end_idx]['end'])
-                    duration = end_time - start_time
+            while queue and (known_count / total_count) * 100 < percentage:
+                old_word, _, _ = queue.popleft()
+                total_count -= 1
+                if old_word in known_words:
+                    known_count -= 1
 
-                    # Add the section with duration
-                    video_sections.append((video.id, start_time, end_time, duration))
-                    break
-                else:
-                    # Slide the window forward by excluding the start word
-                    start_word_id = video_words[start_idx]['root_word']
-                    total_count -= 1
-                    if start_word_id in known_words:
-                        known_count -= 1
-                    start_idx += 1
-
-        sections.extend(video_sections)
-        
-    sections = sorted(sections, key=lambda x: x[3], reverse=True)
-        
+            # Valid section found
+            if queue:
+                start_time = queue[0][1]
+                end_time = queue[-1][2]
+                duration = end_time - start_time
+                sections.append((video_id, start_time, end_time, duration))
+    
+    # Get top `count` longest sections
+    top_sections = heapq.nlargest(count, sections, key=lambda x: x[3])
+    
     result = []
     global_last_end = {}
-
-    for video_index, start_time, end_time, _ in sections:
-        if video_index not in global_last_end or start_time >= global_last_end[video_index]:
+    
+    for video_index, start_time, end_time, _ in top_sections:
+        if start_time >= global_last_end.get(video_index, 0):
             result.append((video_index, start_time, end_time))
             global_last_end[video_index] = end_time
             if len(result) == count:
                 break
-
+    
     return result
+
+def get_conjugation_table(word, user):
+    tag = word.tag
+    # Verb
+    table_dict = {}
+    table_type = -1
+    split_tag = tag.split(":")
+    if split_tag[0] == "inf":
+        table_type = 0
+        table_dict = {i: [-1, '', False] for i in range(19)}
+        '''
+        0-5: 1p sg, pl; 2p sg, pl; 3p sg, pl
+        6-12: sg; 1p m,f; 2p m,f; 3p m,f,n
+        13-18: pl; 1p m,f; 2p m,f; 3p m,f
+        '''
+        child_words = Word.objects.filter(root=word)
+        user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
+        for word in child_words:
+            table_index = 0
+            # Present form
+            if word.tag in ["fin:sg:pri:imperf", "fin:sg:pri:perf"]:
+                table_dict[0] = [word.id, word.word_text, word.id in user_words]
+            elif word.tag in ["fin:pl:pri:imperf", "fin:pl:pri:perf"]:
+                table_dict[1] = [word.id, word.word_text, word.id in user_words]
+            elif word.tag in ["fin:sg:sec:imperf", "fin:sg:sec:perf"]:
+                table_dict[2] = [word.id, word.word_text, word.id in user_words]
+            elif word.tag in ["fin:pl:sec:imperf", "fin:pl:sec:perf"]:
+                table_dict[3] = [word.id, word.word_text, word.id in user_words]
+            elif word.tag in ["fin:sg:ter:imperf", "fin:sg:ter:perf"]:
+                table_dict[4] = [word.id, word.word_text, word.id in user_words]
+            elif word.tag in ["fin:pl:ter:imperf", "fin:pl:ter:perf"]:
+                table_dict[5] = [word.id, word.word_text, word.id in user_words]
+
+            # Past form
+            split_word = word.tag.split(":")
+            if split_word[0] == 'praet' and 'm' in split_word[2] and split_word[3] == 'pri':
+                if split_word[1] == 'pl': table_index = 7
+                table_dict[6+table_index] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[2] == 'f' and split_word[3] == 'pri':
+                if split_word[1] == 'pl': table_index = 7
+                table_dict[7+table_index] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and 'm' in split_word[2] and split_word[3] == 'sec':
+                if split_word[1] == 'pl': table_index = 7
+                table_dict[8+table_index] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[2] == 'f' and split_word[3] == 'sec':
+                if split_word[1] == 'pl': table_index = 7
+                table_dict[9+table_index] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and 'm' in split_word[2] and split_word[3] == 'ter':
+                if split_word[1] == 'pl': table_index = 7
+                table_dict[10+table_index] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[2] == 'f' and split_word[3] == 'ter':
+                if split_word[1] == 'pl': table_index = 7
+                table_dict[11+table_index] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[2] == 'n' and split_word[3] == 'ter':
+                table_dict[12+table_index] = [word.id, word.word_text, word.id in user_words]
+    # Noun
+    elif split_tag[0] == "subst":
+        table_type = 1
+        table_dict = {i: [-1, '', False] for i in range(14)}
+        '''
+        0-6: sg
+        7-13: pl
+        nom, gen, dat, acc, instr, loc, voc
+        '''
+        child_words = Word.objects.filter(root=word)
+        child_words = list(child_words)
+        child_words.append(word)
+        user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
+        for word in child_words:
+            split_word = word.tag.split(":")
+            for tense in split_word[2].split("."):
+                table_index = 0
+                if tense == 'nom':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[0+table_index] = [word.id, word.word_text, word.id in user_words]
+                elif tense == 'gen':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[1+table_index] = [word.id, word.word_text, word.id in user_words]
+                elif tense == 'dat':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[2+table_index] = [word.id, word.word_text, word.id in user_words]
+                elif tense == 'acc':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[3+table_index] = [word.id, word.word_text, word.id in user_words]
+                elif tense == 'inst':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[4+table_index] = [word.id, word.word_text, word.id in user_words]
+                elif tense == 'loc':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[5+table_index] = [word.id, word.word_text, word.id in user_words]
+                elif tense == 'voc':
+                    if split_word[1] == 'pl': table_index = 7
+                    table_dict[6+table_index] = [word.id, word.word_text, word.id in user_words]
+    # Adjective
+    elif split_tag[0] == "adj":
+        table_dict = {i: [-1, '', False] for i in range(14)}
+
+    return (table_dict, table_type)

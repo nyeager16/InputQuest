@@ -137,3 +137,24 @@ button:hover {
 #filterButton:hover {
     background-color: #0056b3;
 }
+
+#conjugation-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#conjugation-table th,
+#conjugation-table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+#conjugation-table th {
+    background-color: #f4f4f4;
+}
+
+.conjugation-cell {
+    cursor: pointer;
+}

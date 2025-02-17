@@ -33,11 +33,14 @@
                 </a>
                 <div class="video-info">
                     <div class="percentage" style="background-color: white;">
-                        {{ video.comprehension_percentage|floatformat:0 }} <!-- Only the number -->
+                        {{ video.comprehension_percentage|floatformat:0 }}
                     </div>
                     <div class="title">
                         <a href="{% url 'video_detail' video.pk %}" style="color: black; text-decoration: none;">{{ video.title|title }}</a>
                     </div>
+                </div>
+                <div class="channel">
+                    <a href="{% url 'channel_detail' video.channel_pk %}">{{ video.channel_name }}</a>
                 </div>
             </div>
             {% endfor %}

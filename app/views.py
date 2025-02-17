@@ -2,16 +2,15 @@ from collections import defaultdict
 from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.utils.timezone import now
-from .models import Video, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition
+from .models import Video, Channel, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition
 from django.db import models
 from django.db.models import Case, When, Count, F, Q, Prefetch
 from django.db.models.functions import Coalesce
 from .forms import SignUpForm
 from .tasks import calculate_video_CI
-from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words
+from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words, get_conjugation_table, remove_words
 import json
 from deep_translator import GoogleTranslator
 from fsrs import Scheduler, Card, Rating, ReviewLog
@@ -51,10 +50,8 @@ def all_videos(request):
         start_index = (page - 1) * videos_per_page
         end_index = start_index + videos_per_page
         videos_to_return = videos[start_index:end_index]
-
         has_next = end_index < videos.count()  # Check if there are more videos
 
-        # Get video data (with comprehension percentage if user is authenticated)
         video_data = get_video_data(videos_to_return, user, comprehension_level_min, comprehension_level_max)
         
         return JsonResponse({'videos': video_data, 'has_next': has_next})
@@ -85,6 +82,135 @@ def update_queue_ci(request):
         return JsonResponse({'status': 'success', 'percentage': new_percentage})
 
     return JsonResponse({'status': 'error'})
+
+class VideoDetailView(View):
+    def get(self, request, pk):
+        video = get_object_or_404(Video, pk=pk)
+        word_limit = 20
+
+        # Annotate words with root word information and count occurrences
+        common_words = (
+            WordInstance.objects
+            .filter(video=video)
+            .annotate(
+                root_word=Case(
+                    When(word__root__isnull=True, then=F('word__word_text')),
+                    default=F('word__root__word_text'),
+                    output_field=models.CharField()
+                ),
+                root_word_id=Case(
+                    When(word__root__isnull=True, then=F('word__id')),
+                    default=F('word__root__id'),
+                    output_field=models.IntegerField()
+                ),
+            )
+            .values('root_word', 'root_word_id')
+            .annotate(word_count=Count('id'))
+            .order_by('-word_count')
+        )
+
+        # Fetch known words if the user is authenticated
+        known_words = set()
+        if request.user.is_authenticated:
+            known_words = set(UserWord.objects.filter(user=request.user).values_list('word__word_text', flat=True))
+
+        # Exclude known words and limit results
+        new_words = list(common_words.exclude(root_word__in=known_words)[:word_limit])
+
+        # Retrieve all child words in a single query
+        root_word_ids = [word['root_word_id'] for word in new_words]
+
+        child_words_mapping = defaultdict(set)
+
+        if root_word_ids:
+            child_words = (
+                WordInstance.objects
+                .filter(video=video)
+                .filter(Q(word__root__id__in=root_word_ids) | Q(word__id__in=root_word_ids))
+                .values_list('word__root__id', 'word__word_text')
+            )
+
+            for root_id, word_text in child_words:
+                child_words_mapping[root_id].add(word_text)
+
+        # Convert sets to lists
+        child_words_mapping = {root: list(children) for root, children in child_words_mapping.items()}
+
+        return render(request, 'video_detail.html', {
+            'video': video,
+            'new_words': new_words,
+            'child_words_mapping': child_words_mapping,
+        })
+    def post(self, request, pk):
+        if request.user.is_authenticated:
+            user = request.user
+            word_id = int(request.POST.get('word_id'))
+            if word_id == '':
+                return redirect('video_detail', pk=pk)
+            add_words(user, [word_id])
+            calculate_video_CI(user.id)
+
+        return redirect('video_detail', pk=pk)
+
+def channel_detail(request, pk):
+    channel = get_object_or_404(Channel, pk=pk)
+    channel_url = channel.channel_url
+
+    word_limit = 20
+
+    # Annotate common words with root word information and count occurrences
+    common_words = (
+        WordInstance.objects
+        .filter(video__channel__id=pk)
+        .annotate(
+            root_word=Case(
+                When(word__root__isnull=True, then=F('word__word_text')),
+                default=F('word__root__word_text'),
+                output_field=models.CharField()
+            ),
+            root_word_id=Case(
+                When(word__root__isnull=True, then=F('word__id')),
+                default=F('word__root__id'),
+                output_field=models.IntegerField()
+            ),
+        )
+        .values('root_word', 'root_word_id')
+        .annotate(word_count=Count('id'))
+        .order_by('-word_count')
+    )
+
+    # Get known words only if the user is logged in
+    known_words = set()
+    if request.user.is_authenticated:
+        known_words = set(UserWord.objects.filter(user=request.user).values_list('word__word_text', flat=True))
+
+    # Filter new words that the user does not already know and limit the results
+    new_words = list(common_words.exclude(root_word__in=known_words)[:word_limit])
+
+    # Fetch all child words in a single query
+    root_word_ids = [word['root_word_id'] for word in new_words]
+    
+    child_words_mapping = defaultdict(set)
+    
+    if root_word_ids:
+        child_words = (
+            WordInstance.objects
+            .filter(video__channel__id=pk)
+            .filter(Q(word__root__id__in=root_word_ids) | Q(word__id__in=root_word_ids))
+            .values_list('word__root__id', 'word__word_text')
+        )
+        
+        for root_id, word_text in child_words:
+            child_words_mapping[root_id].add(word_text)
+
+    # Convert sets back to lists
+    child_words_mapping = {root: list(children) for root, children in child_words_mapping.items()}
+
+    return render(request, 'channel.html', {
+        'channel_url': channel_url,
+        'new_words': new_words,
+        'child_words_mapping': child_words_mapping,
+    })
 
 @login_required(login_url="/app/login/")
 def watch(request):
@@ -151,78 +277,7 @@ def update_comprehension_filter(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
-
-class VideoDetailView(View):
-    def get(self, request, pk):
-        video = get_object_or_404(Video, pk=pk)
-
-        word_limit = 20
-
-        common_words = (
-            WordInstance.objects
-            .filter(video=video)
-            .annotate(
-                # For root words, use the word's text; for non-root words, use the root's text
-                root_word=Case(
-                    When(word__root__isnull=True, then=F('word__word_text')), # If no root, use the word's text
-                    default=F('word__root__word_text'), # Otherwise, use the root's text
-                    output_field=models.CharField()
-                ),
-                root_word_id=Case(
-                    When(word__root__isnull=True, then=F('word__id')), # If no root, use the word's own ID
-                    default=F('word__root__id'), # Otherwise, use the root word's ID
-                    output_field=models.IntegerField()
-                ),
-            )
-            .values('root_word', 'root_word_id') # Include root word's ID
-            .annotate(
-                word_count=Count('id') # Count occurrences
-            )
-            .order_by('-word_count') # Sort by count, descending
-        )
-
-        # Get known words only if the user is logged in
-        known_words = set()
-        if request.user.is_authenticated:
-            known_words = set(UserWord.objects.filter(user=request.user).values_list('word__word_text', flat=True))
-
-        # Filter new words that the user does not already know
-        new_words = [word for word in common_words if word['root_word'] not in known_words]
-
-        new_words = new_words[:word_limit]
-
-        child_words_mapping = defaultdict(set)  # Store child words as a set
-
-        for row in new_words:
-            root_id = row['root_word_id']
-            child_words = (
-                WordInstance.objects
-                .filter(Q(video=video) & (Q(word__root__id=root_id) | Q(word__id=root_id)))
-                .values_list('word__word_text', flat=True)  # Get the text of the child words
-            )
-            # Add child words to the mapping
-            child_words_mapping[root_id].update(child_words)
-
-        # Convert sets back to lists for rendering
-        child_words_mapping = {root: list(children) for root, children in child_words_mapping.items()}
-
-        return render(request, 'video_detail.html', {
-            'video': video,
-            'new_words': new_words,
-            'child_words_mapping': child_words_mapping,
-        })
-    def post(self, request, pk):
-        if request.user.is_authenticated:
-            user = request.user
-            word_id = int(request.POST.get('word_id'))
-            if word_id == '':
-                return redirect('video_detail', pk=pk)
-            add_words(user, [word_id])
-            calculate_video_CI(user.id)
-
-        return redirect('video_detail', pk=pk)
-        
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})        
 
 @login_required(login_url="/app/login/")
 def review(request):
@@ -413,6 +468,24 @@ def learn_word(request, word):
                                                'definition': definition},)
 
 @login_required(login_url="/app/login/")
+def get_conjugation_table_view(request, word_id):
+    word = Word.objects.get(id=word_id)
+    conjugation_table = get_conjugation_table(word, user=request.user)
+    print(conjugation_table)
+    return JsonResponse({'status': 'success', 'conjugation_table': conjugation_table[0],
+                         'table_type': conjugation_table[1]})
+
+def save_selected_word(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        if data['is_selected']:
+            add_words(request.user, [data['word_id']])
+        if not data['is_selected']:
+            remove_words(request.user, [data['word_id']])
+    return JsonResponse({'status': 'success'})
+
+
+@login_required(login_url="/app/login/")
 def flashcards(request):
     if request.method == "POST":
         user = request.user
@@ -433,10 +506,10 @@ def flashcards(request):
         filter_message = "Filter"
 
         if user_preferences.vocab_filter == 0:
-            user_words = UserWord.objects.filter(user=user).select_related('word').order_by('word__word_text')
+            user_words = UserWord.objects.filter(user=user, word__root = None).select_related('word').order_by('word__word_text')
             filter_message = "Alphabetical Order"
         elif user_preferences.vocab_filter == 1:
-            user_words = UserWord.objects.filter(user=user).select_related('word').order_by('-id')
+            user_words = UserWord.objects.filter(user=user, word__root = None).select_related('word').order_by('-id')
             filter_message = "Recently Added"
         
         definition_queryset = Definition.objects.filter(

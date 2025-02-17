@@ -35,6 +35,32 @@
                     <button type="submit" id="saveButton">Save Changes</button>
                 </div>
             </form>
+
+            <div id="conjugationTableContainer" style="display: none;">
+                <h3></h3>
+                <table id="conjugation-table">
+                    <thead>
+                        <tr>
+                            <th>Singular</th>
+                            <th>Plural</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="singular1p" class="conjugation-cell" data-word-id=""></td>
+                            <td id="plural1p" class="conjugation-cell" data-word-id=""></td>
+                        </tr>
+                        <tr>
+                            <td id="singular2p" class="conjugation-cell" data-word-id=""></td>
+                            <td id="plural2p" class="conjugation-cell" data-word-id=""></td>
+                        </tr>
+                        <tr>
+                            <td id="singular3p" class="conjugation-cell" data-word-id=""></td>
+                            <td id="plural3p" class="conjugation-cell" data-word-id=""></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     <script src="{% static 'app/js/flashcards.js' %}"></script>

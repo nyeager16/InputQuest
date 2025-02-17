@@ -1,0 +1,43 @@
+{% load custom_filters %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ video.title|title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'app/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'app/css/sidebar.css' %}">
+    <link rel="icon" href="{% static 'app/images/favicon.ico' %}" type="image/x-icon">
+</head>
+<body>
+    {% block sidebar %}
+    {% include 'sidebar.html' %}
+    {% endblock %}
+    <div class="content">
+        <div class="container">
+            <div class="new-words">
+                <h2>New Words</h2>
+                {% for word in new_words %}
+                    <span class="word" data-word="{{ word.root_word }}" data-word-id="{{ word.root_word_id}}">{{ word.root_word }}</span>
+                {% endfor %}
+            </div>
+            <div class="child-words" id="child-words-container"></div>
+            <div class="buttons-container">
+                <a id="learn-button" href="#" class="action-button">Learn</a>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="word_id" value="{{ word.root_word }}">
+                    <button type="submit" class="action-button">Add Flashcard</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        var childWordsMapping = {{ child_words_mapping|safe }};
+        var learnWordUrlTemplate = "{% url 'learn_word' 'root_word' %}";
+    </script>
+    <script src="{% static 'app/js/video_detail.js' %}"></script>
+</body>
+</html>
