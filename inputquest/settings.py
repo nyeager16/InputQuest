@@ -33,7 +33,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 # Authentication settings
 LOGIN_URL = '/login/'  # URL to redirect to for login
-LOGIN_REDIRECT_URL = '/app/videos/'  # Redirect to the videos page after login
+LOGIN_REDIRECT_URL = '/videos/'  # Redirect to the videos page after login
 LOGOUT_REDIRECT_URL = '/login/'   # Redirect to the login page after logout
 
 

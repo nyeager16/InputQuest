@@ -37,7 +37,7 @@ flashcardItems.forEach(item => {
         // Get the ID of the selected word
         const wordId = this.dataset.id;
 
-        fetch(`/app/get-conjugation-table/${wordId}/`, {
+        fetch(`/get-conjugation-table/${wordId}/`, {
             method: 'GET',
             headers: {
                 'X-CSRFToken': csrftoken,
@@ -51,10 +51,14 @@ flashcardItems.forEach(item => {
                 const tableContainer = document.getElementById('conjugationTableContainer');
                 const tableBody = document.querySelector('#conjugation-table tbody');
                 const tableHead = document.querySelector('#conjugation-table thead');
+                const pastTableBody = document.querySelector('#past-conjugation-table tbody');
+                const pastTableHead = document.querySelector('#past-conjugation-table thead');
         
                 // Clear previous table content
                 tableBody.innerHTML = "";
                 tableHead.innerHTML = "";
+                pastTableBody.innerHTML = "";
+                pastTableHead.innerHTML = "";
         
                 if (Object.keys(conjugationTable).length > 0) {
                     if (tableType === 0) {
@@ -65,12 +69,29 @@ flashcardItems.forEach(item => {
                                 <th>Plural</th>
                             </tr>
                         `;
+                        pastTableHead.innerHTML = `
+                            <tr>
+                                <th></th>
+                                <th>m.</th>
+                                <th>f.</th>
+                                <th>n.</th>
+                                <th>m.pl.</th>
+                                <th>other pl.</th>
+                            </tr>
+                        `;
         
                         const rowLabels = ["1p", "2p", "3p"];
                         let rowHTML = '';
+                        let pastrowHTML = '';
                         for (let i = 0; i < 3; i++) {
-                            const singular = conjugationTable[i * 2];
-                            const plural = conjugationTable[i * 2 + 1];
+                            const singular = conjugationTable[i*2];
+                            const plural = conjugationTable[i*2+1];
+
+                            const pastM = conjugationTable[i*5+6];
+                            const pastF = conjugationTable[i*5+7];
+                            const pastN = conjugationTable[i*5+8];
+                            const pastMPL = conjugationTable[i*5+9];
+                            const pastOPL = conjugationTable[i*5+10];
         
                             rowHTML += `
                                 <tr>
@@ -85,8 +106,35 @@ flashcardItems.forEach(item => {
                                     </td>
                                 </tr>
                             `;
+                            
+                            pastrowHTML += `
+                                <tr>
+                                    <td><strong>${rowLabels[i]}</strong></td>
+                                    <td class="conjugation-cell" data-word-id="${pastM[0]}" id="cell-${pastM[0]}" 
+                                        style="background-color: ${pastM[2] ? 'lightgreen' : 'transparent'}">
+                                        ${pastM[1]}
+                                    </td>
+                                    <td class="conjugation-cell" data-word-id="${pastF[0]}" id="cell-${pastF[0]}" 
+                                        style="background-color: ${pastF[2] ? 'lightgreen' : 'transparent'}">
+                                        ${pastF[1]}
+                                    </td>
+                                    <td class="conjugation-cell" data-word-id="${pastN[0]}" id="cell-${pastN[0]}" 
+                                        style="background-color: ${pastN[2] ? 'lightgreen' : 'transparent'}">
+                                        ${pastN[1]}
+                                    </td>
+                                    <td class="conjugation-cell" data-word-id="${pastMPL[0]}" id="cell-${pastMPL[0]}" 
+                                        style="background-color: ${pastMPL[2] ? 'lightgreen' : 'transparent'}">
+                                        ${pastMPL[1]}
+                                    </td>
+                                    <td class="conjugation-cell" data-word-id="${pastOPL[0]}" id="cell-${pastOPL[0]}" 
+                                        style="background-color: ${pastOPL[2] ? 'lightgreen' : 'transparent'}">
+                                        ${pastOPL[1]}
+                                    </td>
+                                </tr>
+                            `;
                         }
                         tableBody.innerHTML = rowHTML;
+                        pastTableBody.innerHTML = pastrowHTML;
         
                     } else if (tableType === 1) {
                         const rowLabels = ["Nom", "Gen", "Dat", "Acc", "Instr", "Loc", "Voc"];
@@ -142,7 +190,7 @@ flashcardItems.forEach(item => {
                             }
         
                             // Send only the clicked word ID and its new state
-                            fetch('/app/save-selected-word/', {
+                            fetch('/save-selected-word/', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -150,7 +198,7 @@ flashcardItems.forEach(item => {
                                 },
                                 body: JSON.stringify({ 
                                     word_id: wordId, 
-                                    is_selected: !isSelected // Send the updated state
+                                    is_selected: !isSelected
                                 }),
                             })
                             .then(response => response.json())
@@ -189,7 +237,7 @@ document.getElementById('saveButton').addEventListener('click', function (event)
     }
 
     // Make a POST request to update the definition
-    fetch(`/app/update-definition/${wordId}/`, {
+    fetch(`/update-definition/${wordId}/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -223,7 +271,7 @@ document.getElementById('saveButton').addEventListener('click', function (event)
 document.getElementById('filterButton').addEventListener('click', function () {
     console.log('Filter button clicked');
 
-    fetch('/app/account/flashcards', {
+    fetch('/account/flashcards', {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrftoken,

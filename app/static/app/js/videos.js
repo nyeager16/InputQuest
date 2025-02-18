@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const videoItem = document.createElement('div');
                 videoItem.className = 'video-item';
                 videoItem.innerHTML = `
-                    <a href="/app/video/${video.pk}">
+                    <a href="/video/${video.pk}">
                         <div class="thumbnail-wrapper">
                             <img src="https://img.youtube.com/vi/${video.url}/hqdefault.jpg" alt="${video.title}">
                         </div>
@@ -117,11 +117,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${video.comprehension_percentage}
                         </div>
                         <div class="title">
-                            <a href="/app/video/${video.pk}" style="color: black; text-decoration: none;">${video.title}</a>
+                            <a href="/video/${video.pk}" style="color: black; text-decoration: none;">${video.title}</a>
                         </div>
                     </div>
                     <div class="channel">
-                        <a href="/app/channel/${video.channel_pk}">${video.channel_name}</a>
+                        <a href="/channel/${video.channel_pk}">${video.channel_name}</a>
                     </div>
                 `;
                 videoGrid.appendChild(videoItem);

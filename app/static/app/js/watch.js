@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(data => {
             if (data.status === 'success') {
                 // Redirect to the queue page after the update
-                window.location.href = '/app/watch/queue';  // Redirect to the queue page
+                window.location.href = '/watch/queue';  // Redirect to the queue page
             } else {
             alert('Error updating preference');
             }

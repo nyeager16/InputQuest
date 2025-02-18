@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                window.location.href = '/app/account';
+                window.location.href = '/account';
             } else {
             alert('Error adding words');
             }

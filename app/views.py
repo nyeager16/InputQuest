@@ -7,13 +7,11 @@ from django.utils.timezone import now
 from .models import Video, Channel, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition
 from django.db import models
 from django.db.models import Case, When, Count, F, Q, Prefetch
-from django.db.models.functions import Coalesce
 from .forms import SignUpForm
 from .tasks import calculate_video_CI
 from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words, get_conjugation_table, remove_words
 import json
-from deep_translator import GoogleTranslator
-from fsrs import Scheduler, Card, Rating, ReviewLog
+from fsrs import Scheduler, Rating
 
 def all_videos(request):
     # Check if the user is authenticated
@@ -68,7 +66,7 @@ def all_videos(request):
         'message': message,
     })
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def update_queue_ci(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -212,7 +210,7 @@ def channel_detail(request, pk):
         'child_words_mapping': child_words_mapping,
     })
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def watch(request):
     if request.user.is_authenticated:
         user = request.user
@@ -220,7 +218,7 @@ def watch(request):
         percentage = user_preferences.queue_CI
     return render(request, 'watch.html', {'percentage': percentage})
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def watch_queue(request):
     user = request.user
 
@@ -254,7 +252,7 @@ def watch_queue(request):
 
     return render(request, 'watch_queue.html', {'video': video})
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def update_comprehension_filter(request):
     if request.method == 'POST':
         try:
@@ -279,7 +277,7 @@ def update_comprehension_filter(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})        
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def review(request):
     user = request.user
     words_to_review = UserWord.objects.filter(user=user, needs_review=True, data__due__lte=now().isoformat())
@@ -312,7 +310,7 @@ def review(request):
         'definitions_json': json.dumps(definitions), 
         'message': message})
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def submit_review(request, word_id, rating):
     if request.method == 'POST':
         if rating == 0:
@@ -336,7 +334,7 @@ def submit_review(request, word_id, rating):
 
         return JsonResponse({'status': 'success'})
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def change_review(request, word_id, needs_review):
     if request.method == 'POST':
         needs_review = needs_review.lower() == 'true'
@@ -350,7 +348,7 @@ def change_review(request, word_id, needs_review):
 
         return redirect('review')
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def update_definition(request, word_id):
     user = request.user
     if request.method == 'POST':
@@ -384,12 +382,12 @@ def signup(request):
         form = SignUpForm()
     return render(request, 'registration/signup.html', {'form': form})
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def account(request):
 
     return render(request, 'account.html')
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def add_common_words(request):
     if request.method == 'POST':
         user = request.user
@@ -410,7 +408,7 @@ def about(request):
 
     return render(request, 'about.html')
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def learn(request):
     if request.method == "POST":
         user = request.user
@@ -428,8 +426,13 @@ def learn(request):
     return render(request, 'learn.html', {'new_words': new_words})
 
 def learn_word(request, word):
-    # Logic for handling the specific word
     root_word = Word.objects.filter(word_text=word, root=None).first()
+    if not root_word:
+        child_word = Word.objects.filter(word_text=word).first()
+        if not child_word:
+            return redirect('learn')
+        else:
+            return redirect('learn_word', word=child_word.root.word_text)
     
     related_words = Word.objects.filter(Q(id=root_word.id) | Q(root=root_word))
 
@@ -447,27 +450,17 @@ def learn_word(request, word):
         'url': video.url,
     })
 
-    words = WordInstance.objects.filter(video__id=video_id, word__in=related_words)
+    conjugation_table = get_conjugation_table(root_word, None)
 
-    word_object = Word.objects.filter(word_text=word).first()
-    if request.user.is_authenticated:
-        user = request.user
-        definition = Definition.objects.filter(user=user, word=word_object).first()
-        if not definition:
-            definition = Definition.objects.filter(user=None, word=word_object).first()
-            if not definition:
-                translated = GoogleTranslator(source='pl',target='en').translate(word)
-                definition = Definition(user=None, word=word_object, definition_text=translated)
-                definition.save()
-    else:
-        definition = None
+    words = WordInstance.objects.filter(video__id=video_id, word__in=related_words)
 
     return render(request, 'learn_word.html', {'word': word, 
                                                'words': words,
                                                'video_data': video_data,
-                                               'definition': definition},)
+                                               'conjugation_table': conjugation_table[0],
+                                               'table_type': conjugation_table[1]},)
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def get_conjugation_table_view(request, word_id):
     word = Word.objects.get(id=word_id)
     conjugation_table = get_conjugation_table(word, user=request.user)
@@ -485,7 +478,7 @@ def save_selected_word(request):
     return JsonResponse({'status': 'success'})
 
 
-@login_required(login_url="/app/login/")
+@login_required(login_url="/login/")
 def flashcards(request):
     if request.method == "POST":
         user = request.user
@@ -507,7 +500,7 @@ def flashcards(request):
 
         if user_preferences.vocab_filter == 0:
             user_words = UserWord.objects.filter(user=user, word__root = None).select_related('word').order_by('word__word_text')
-            filter_message = "Alphabetical Order"
+            filter_message = "A->Z"
         elif user_preferences.vocab_filter == 1:
             user_words = UserWord.objects.filter(user=user, word__root = None).select_related('word').order_by('-id')
             filter_message = "Recently Added"

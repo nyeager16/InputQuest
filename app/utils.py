@@ -146,14 +146,16 @@ def get_conjugation_table(word, user):
     split_tag = tag.split(":")
     if split_tag[0] == "inf":
         table_type = 0
-        table_dict = {i: [-1, '', False] for i in range(19)}
+        table_dict = {i: [-1, '', False] for i in range(21)}
         '''
         0-5: 1p sg, pl; 2p sg, pl; 3p sg, pl
-        6-12: sg; 1p m,f; 2p m,f; 3p m,f,n
-        13-18: pl; 1p m,f; 2p m,f; 3p m,f
+        6-15: sg; 1p m,f; 2p m,f; 3p m,f,n
+        16-20: pl; 1p m,f; 2p m,f; 3p m,f
         '''
         child_words = Word.objects.filter(root=word)
-        user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
+        user_words = set()
+        if user:
+            user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
         for word in child_words:
             table_index = 0
             # Present form
@@ -172,26 +174,34 @@ def get_conjugation_table(word, user):
 
             # Past form
             split_word = word.tag.split(":")
-            if split_word[0] == 'praet' and 'm' in split_word[2] and split_word[3] == 'pri':
-                if split_word[1] == 'pl': table_index = 7
-                table_dict[6+table_index] = [word.id, word.word_text, word.id in user_words]
-            elif split_word[0] == 'praet' and split_word[2] == 'f' and split_word[3] == 'pri':
-                if split_word[1] == 'pl': table_index = 7
-                table_dict[7+table_index] = [word.id, word.word_text, word.id in user_words]
-            elif split_word[0] == 'praet' and 'm' in split_word[2] and split_word[3] == 'sec':
-                if split_word[1] == 'pl': table_index = 7
-                table_dict[8+table_index] = [word.id, word.word_text, word.id in user_words]
-            elif split_word[0] == 'praet' and split_word[2] == 'f' and split_word[3] == 'sec':
-                if split_word[1] == 'pl': table_index = 7
-                table_dict[9+table_index] = [word.id, word.word_text, word.id in user_words]
-            elif split_word[0] == 'praet' and 'm' in split_word[2] and split_word[3] == 'ter':
-                if split_word[1] == 'pl': table_index = 7
-                table_dict[10+table_index] = [word.id, word.word_text, word.id in user_words]
-            elif split_word[0] == 'praet' and split_word[2] == 'f' and split_word[3] == 'ter':
-                if split_word[1] == 'pl': table_index = 7
-                table_dict[11+table_index] = [word.id, word.word_text, word.id in user_words]
-            elif split_word[0] == 'praet' and split_word[2] == 'n' and split_word[3] == 'ter':
-                table_dict[12+table_index] = [word.id, word.word_text, word.id in user_words]
+            if split_word[0] == 'praet' and split_word[3] == 'pri' and split_word[1] == 'sg' and 'm' in split_word[2]:
+                table_dict[6] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'pri' and split_word[1] == 'sg' and split_word[2] == 'f':
+                table_dict[7] = [word.id, word.word_text, word.id in user_words]
+            # table_dict[8] always empty
+            elif split_word[0] == 'praet' and split_word[3] == 'pri' and split_word[1] == 'pl' and 'm' in split_word[2] and 'f' not in split_word[2]:
+                table_dict[9] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'pri' and split_word[1] == 'pl' and 'm' in split_word[2] and 'f' in split_word[2]:
+                table_dict[10] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'sec' and split_word[1] == 'sg' and 'm' in split_word[2]:
+                table_dict[11] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'sec' and split_word[1] == 'sg' and split_word[2] == 'f':
+                table_dict[12] = [word.id, word.word_text, word.id in user_words]
+            # table_dict[13] always empty
+            elif split_word[0] == 'praet' and split_word[3] == 'sec' and split_word[1] == 'pl' and 'm' in split_word[2] and 'f' not in split_word[2]:
+                table_dict[14] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'sec' and split_word[1] == 'pl' and 'm' in split_word[2] and 'f' in split_word[2]:
+                table_dict[15] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'ter' and split_word[1] == 'sg' and 'm' in split_word[2]:
+                table_dict[16] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'ter' and split_word[1] == 'sg' and split_word[2] == 'f':
+                table_dict[17] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'ter' and split_word[1] == 'sg' and split_word[2] == 'n':
+                table_dict[18] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'ter' and split_word[1] == 'pl' and 'm' in split_word[2] and 'f' not in split_word[2]:
+                table_dict[19] = [word.id, word.word_text, word.id in user_words]
+            elif split_word[0] == 'praet' and split_word[3] == 'ter' and split_word[1] == 'pl' and 'm' in split_word[2] and 'f' in split_word[2]:
+                table_dict[20] = [word.id, word.word_text, word.id in user_words]
     # Noun
     elif split_tag[0] == "subst":
         table_type = 1
@@ -204,7 +214,9 @@ def get_conjugation_table(word, user):
         child_words = Word.objects.filter(root=word)
         child_words = list(child_words)
         child_words.append(word)
-        user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
+        user_words = set()
+        if user:
+            user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
         for word in child_words:
             split_word = word.tag.split(":")
             for tense in split_word[2].split("."):
@@ -232,6 +244,17 @@ def get_conjugation_table(word, user):
                     table_dict[6+table_index] = [word.id, word.word_text, word.id in user_words]
     # Adjective
     elif split_tag[0] == "adj":
-        table_dict = {i: [-1, '', False] for i in range(14)}
+        table_type = 2
+        table_dict = {i: [-1, '', False] for i in range(30)}
+        '''
+        
+        '''
+        child_words = Word.objects.filter(root=word)
+        child_words = list(child_words)
+        child_words.append(word)
+        for word in child_words:
+
+
+            return
 
     return (table_dict, table_type)

@@ -45,18 +45,50 @@ class Command(BaseCommand):
                 if rootExists:
                     if infExists:
                         heldRows = heldRows + heldRoots
+                        for heldrow in heldRows:
+                            w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
+                                    wtype=heldrow.desc, abb=heldrow.abb, 
+                                    root=currRootObject)
+                            words.append(w)
                     else:
-                        rootrow = heldRoots.pop(0)
-                        currRootObject = Word(word_text=rootrow.form, lang=pl, tag=rootrow.tag,
-                                                wtype=rootrow.desc, abb=rootrow.abb, 
-                                                root=None)
-                        currRootObject.save()
-                        heldRows = heldRows + heldRoots
-                    for heldrow in heldRows:
-                        w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
-                                wtype=heldrow.desc, abb=heldrow.abb, 
-                                root=currRootObject)
-                        words.append(w)
+                        # rootrow = heldRoots.pop(0)
+                        # currRootObject = Word(word_text=rootrow.form, lang=pl, tag=rootrow.tag,
+                        #                         wtype=rootrow.desc, abb=rootrow.abb, 
+                        #                         root=None)
+                        # currRootObject.save()
+                        # heldRows = heldRows + heldRoots
+                        # for heldrow in heldRows:
+                        #     w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
+                        #             wtype=heldrow.desc, abb=heldrow.abb, 
+                        #             root=currRootObject)
+                        #     words.append(w)
+
+                        tagMap = {}
+                        for heldRoot in heldRoots:
+                            rootTag = heldRoot.tag.split(":")[0]
+                            if rootTag in tagMap:
+                                w = Word(word_text=heldRoot.form, lang=pl, tag=heldRoot.tag,
+                                    wtype=heldRoot.desc, abb=heldRoot.abb, 
+                                    root=tagMap[rootTag])
+                                words.append(w)
+                            else:
+                                rootw = Word(word_text=heldRoot.form, lang=pl, tag=heldRoot.tag,
+                                                       wtype=heldRoot.desc, abb=heldRoot.abb, root=None)
+                                rootw.save()
+                                tagMap[rootTag] = rootw
+                        for heldrow in heldRows:
+                            rootTag = heldRoot.tag.split(":")[0]
+                            if rootTag in tagMap:
+                                w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
+                                    wtype=heldrow.desc, abb=heldrow.abb, 
+                                    root=tagMap[rootTag])
+                                words.append(w)
+                            else:
+                                first_key = next(iter(tagMap))
+                                w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
+                                    wtype=heldrow.desc, abb=heldrow.abb, 
+                                    root=tagMap[first_key])
+                                words.append(w)
                     heldRows = []
                     heldRoots = []
                     currRootForm = lemma
