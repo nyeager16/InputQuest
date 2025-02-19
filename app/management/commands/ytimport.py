@@ -19,7 +19,6 @@ class Command(BaseCommand):
         language = str(options['language'])
 
         language_object = Language.objects.get(abb=language)
-        exclude_substrings = ['nazwisko','imię']
 
         videos = []
         wordinstances = []
@@ -67,8 +66,6 @@ class Command(BaseCommand):
                     if not Word.objects.filter(word_text=word).exists():
                         continue
                     dataword = Word.objects.filter(word_text=word).first()
-                    if any(substring in dataword.wtype for substring in exclude_substrings):
-                        continue
                     wordinstances.append(WordInstance(word=dataword, 
                                                     video=vid, start=start, end=end))
 
@@ -79,7 +76,7 @@ class Command(BaseCommand):
         for user in users:
             user_videos_to_create = [UserVideo(user=user,video=video) for video in videos]
             UserVideo.objects.bulk_create(user_videos_to_create)
-        
+
 
 # python manage.py ytimport "https://www.youtube.com/@EasyPolish" "pl"
 # python manage.py ytimport "https://www.youtube.com/@Robert_Maklowicz" "pl"

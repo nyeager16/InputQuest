@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from app.models import Word, Language
+from collections import defaultdict
 import pandas as pd
 
 # Read the .tab file into a DataFrame
@@ -51,44 +52,40 @@ class Command(BaseCommand):
                                     root=currRootObject)
                             words.append(w)
                     else:
-                        # rootrow = heldRoots.pop(0)
-                        # currRootObject = Word(word_text=rootrow.form, lang=pl, tag=rootrow.tag,
-                        #                         wtype=rootrow.desc, abb=rootrow.abb, 
-                        #                         root=None)
-                        # currRootObject.save()
-                        # heldRows = heldRows + heldRoots
-                        # for heldrow in heldRows:
-                        #     w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
-                        #             wtype=heldrow.desc, abb=heldrow.abb, 
-                        #             root=currRootObject)
-                        #     words.append(w)
-
                         tagMap = {}
                         for heldRoot in heldRoots:
                             rootTag = heldRoot.tag.split(":")[0]
                             if rootTag in tagMap:
-                                w = Word(word_text=heldRoot.form, lang=pl, tag=heldRoot.tag,
-                                    wtype=heldRoot.desc, abb=heldRoot.abb, 
-                                    root=tagMap[rootTag])
-                                words.append(w)
+                                heldRows.append(heldRoot)
                             else:
                                 rootw = Word(word_text=heldRoot.form, lang=pl, tag=heldRoot.tag,
                                                        wtype=heldRoot.desc, abb=heldRoot.abb, root=None)
-                                rootw.save()
-                                tagMap[rootTag] = rootw
+                                tagMap[rootTag] = heldRoot
+                        
+                        tagCount = defaultdict(int)
                         for heldrow in heldRows:
-                            rootTag = heldRoot.tag.split(":")[0]
+                            rootTag = heldrow.tag.split(":")[0]
                             if rootTag in tagMap:
-                                w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
-                                    wtype=heldrow.desc, abb=heldrow.abb, 
-                                    root=tagMap[rootTag])
-                                words.append(w)
-                            else:
-                                first_key = next(iter(tagMap))
-                                w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
-                                    wtype=heldrow.desc, abb=heldrow.abb, 
-                                    root=tagMap[first_key])
-                                words.append(w)
+                                tagCount[rootTag] += 1
+                        if tagCount:
+                            max_tag = max(tagCount, key=tagCount.get)
+                            root_word = tagMap.pop(max_tag)
+                        else:
+                            first_key = next(iter(tagMap))
+                            root_word = tagMap.pop(first_key)
+                        rootw = Word(word_text=root_word.form, lang=pl, tag=root_word.tag,
+                                        wtype=root_word.desc, abb=root_word.abb, root=None)
+                        rootw.save()
+                        for key, value in tagMap.items():
+                            w = Word(word_text=value.form, lang=pl, tag=value.tag,
+                                wtype=value.desc, abb=value.abb, 
+                                root=rootw)
+                            words.append(w)
+                        for heldrow in heldRows:
+                            w = Word(word_text=heldrow.form, lang=pl, tag=heldrow.tag,
+                                wtype=heldrow.desc, abb=heldrow.abb, 
+                                root=rootw)
+                            words.append(w)                            
                     heldRows = []
                     heldRoots = []
                     currRootForm = lemma

@@ -219,6 +219,8 @@ def get_conjugation_table(word, user):
             user_words = set(UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False).values_list('word__id', flat=True))
         for word in child_words:
             split_word = word.tag.split(":")
+            if len(split_word) < 3:
+                continue
             for tense in split_word[2].split("."):
                 table_index = 0
                 if tense == 'nom':
@@ -245,16 +247,121 @@ def get_conjugation_table(word, user):
     # Adjective
     elif split_tag[0] == "adj":
         table_type = 2
-        table_dict = {i: [-1, '', False] for i in range(30)}
+        table_dict = {i: [-1, '', False] for i in range(27)}
         '''
-        
+        7 rows: nom, gen, dat, acc, instr, loc, voc
+        nom, acc: m, n, f, m pl., other pl.
+        gen, dat, instr, loc: m/n, f, pl.
         '''
         child_words = Word.objects.filter(root=word)
         child_words = list(child_words)
         child_words.append(word)
         for word in child_words:
-
-
-            return
+            split_word = word.tag.split(":")
+            if split_word[-1] == 'pos' and len(split_word) > 4:
+                for tense in split_word[2].split("."):
+                    if tense == 'nom':
+                        table_index = 0
+                        if split_word[1] == 'pl':
+                            table_index += 3
+                            if 'm' in split_word[3] and 'f' in split_word[3]: table_index += 1
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 0
+                                if sg_tag == 'n':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                elif sg_tag == 'f':
+                                    table_index += 2
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                    elif tense == 'gen':
+                        table_index = 5
+                        if split_word[1] == 'pl':
+                            table_index += 2
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 5
+                                if sg_tag == 'f':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                    elif tense == 'dat':
+                        table_index = 8
+                        if split_word[1] == 'pl':
+                            table_index += 2
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 8
+                                if sg_tag == 'f':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                    elif tense == 'acc':
+                        table_index = 11
+                        if split_word[1] == 'pl':
+                            table_index += 3
+                            if 'm' in split_word[3] and 'f' in split_word[3]: table_index += 1
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 11
+                                if sg_tag == 'n':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                elif sg_tag == 'f':
+                                    table_index += 2
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                    elif tense == 'inst':
+                        table_index = 16
+                        if split_word[1] == 'pl':
+                            table_index += 2
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 16
+                                if sg_tag == 'f':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                    elif tense == 'loc':
+                        table_index = 19
+                        if split_word[1] == 'pl':
+                            table_index += 2
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 19
+                                if sg_tag == 'f':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                    elif tense == 'voc':
+                        table_index = 22
+                        if split_word[1] == 'pl':
+                            table_index += 3
+                            if 'm' in split_word[3] and 'f' in split_word[3]: table_index += 1
+                            table_dict[table_index] = [word.id, word.word_text, False]
+                        else:
+                            for sg_tag in split_word[3].split('.'):
+                                table_index = 22
+                                if sg_tag == 'n':
+                                    table_index += 2
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                elif sg_tag == 'f':
+                                    table_index += 1
+                                    table_dict[table_index] = [word.id, word.word_text, False]
+                                else:
+                                    table_dict[table_index] = [word.id, word.word_text, False]
 
     return (table_dict, table_type)
