@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const slider = document.getElementById("comprehensibleInput");
-    const percentageDisplay = document.getElementById("percentage");
-    const goToQueueButton = document.getElementById("goToQueue");
+    const slider = document.getElementById("sliderValue");
+    const count = document.getElementById("count");
+    const addButton = document.getElementById("add");
 
     // from: https://docs.djangoproject.com/en/5.1/howto/csrf/
     function getCookie(name) {
@@ -21,36 +21,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const csrftoken = getCookie('csrftoken');
 
-    // Button action (e.g., redirect or trigger an action)
     slider.oninput = function() {
-        percentageDisplay.textContent = `${slider.value}%`;
+        count.textContent = `${slider.value}`;
     };
 
-    // Handle "Go to Queue" button click
-    goToQueueButton.onclick = function() {
-        const selectedPercentage = slider.value;
+    addButton.onclick = function() {
+        const wordCount = slider.value;
 
-        // Send the updated percentage to the backend using fetch
-        fetch(updateQueueUrl, {
+        fetch(commonWords, {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken  // Include CSRF token for POST requests in Django
+            'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ 'percentage': selectedPercentage })
+            body: JSON.stringify({ 'word_count': wordCount })
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Redirect to the queue page after the update
-                window.location.href = '/watch/queue';  // Redirect to the queue page
+                window.location.href = '/account';
             } else {
-            alert('Error updating preference');
+            alert('Error adding words');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Failed to update preference');
+            alert('Failed to add words');
         });
     };
 });

@@ -21,8 +21,7 @@ body {
 
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(4, 1fr);
 }
 
 .video-item {
@@ -30,6 +29,7 @@ body {
     padding: 10px;
     border-radius: 8px;
     border: none;
+    margin-bottom: 10px;
 }
 
 .thumbnail-wrapper {
@@ -57,6 +57,7 @@ body {
     align-items: center;
     justify-content: flex-start;
     margin-top: 10px;
+    margin-bottom: 4px;
 }
 
 .percentage {
@@ -85,6 +86,18 @@ body {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+}
+
+.channel a {
+    color: #404040;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s ease;
+    margin-left: 50px;
+}
+
+.channel a:hover {
+    color: black;
 }
 
 .noUi-handle::before,
@@ -144,15 +157,15 @@ body {
     transform: scale(0.95);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
     .video-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
   
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
     .video-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
   
     .video-info {
@@ -163,6 +176,12 @@ body {
     .title {
         text-align: left;
         margin-left: 0;
+    }
+}
+
+@media (max-width: 800px) {
+    .video-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -252,15 +271,10 @@ iframe {
     padding: 12px 20px;
     font-size: 16px;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 5px;
     transition: background-color 0.3s, transform 0.2s;
 }
 
 .action-button:hover {
     background-color: #0056b3;
-    transform: scale(1.05);
-}
-
-.action-button:active {
-    transform: scale(0.95);
 }

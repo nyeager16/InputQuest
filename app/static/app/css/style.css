@@ -271,15 +271,10 @@ iframe {
     padding: 12px 20px;
     font-size: 16px;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 5px;
     transition: background-color 0.3s, transform 0.2s;
 }
 
 .action-button:hover {
     background-color: #0056b3;
-    transform: scale(1.05);
-}
-
-.action-button:active {
-    transform: scale(0.95);
 }

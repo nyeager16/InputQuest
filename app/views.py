@@ -252,6 +252,16 @@ def watch_queue(request):
 
     return render(request, 'watch_queue.html', {'video': video})
 
+def generate_questions(request, video_id):
+    questions = [
+        "Test Question 1",
+        "Test Question 2",
+        "Test Question 3",
+        "Test Question 4",
+        "Test Question 5"
+    ]
+    return JsonResponse({"questions": questions})
+
 @login_required(login_url="/login/")
 def update_comprehension_filter(request):
     if request.method == 'POST':
@@ -471,7 +481,6 @@ def learn_word(request, word):
 def get_conjugation_table_view(request, word_id):
     word = Word.objects.get(id=word_id)
     conjugation_table = get_conjugation_table(word, user=request.user)
-    print(conjugation_table)
     return JsonResponse({'status': 'success', 'conjugation_table': conjugation_table[0],
                          'table_type': conjugation_table[1]})
 
@@ -483,7 +492,6 @@ def save_selected_word(request):
         if not data['is_selected']:
             remove_words(request.user, [data['word_id']])
     return JsonResponse({'status': 'success'})
-
 
 @login_required(login_url="/login/")
 def flashcards(request):

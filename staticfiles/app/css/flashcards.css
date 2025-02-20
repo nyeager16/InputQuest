@@ -16,13 +16,12 @@ body {
 }
 
 .flashcard-list {
-    width: 50%;
+    width: 30%;
     background-color: #fff;
     border-right: 1px solid #ccc;
     padding: 1px;
     overflow-y: auto;
     max-height: calc(100vh - 60px);
-    scrollbar-width: thin;
     scrollbar-color: #007bff transparent;
     display: flex;
     flex-direction: column;
@@ -51,6 +50,7 @@ body {
     background-color: #f9f9f9;
     cursor: pointer;
     transition: background-color 0.3s;
+    white-space: nowrap;
 }
 
 .flashcard-item:hover {
@@ -68,7 +68,7 @@ body {
 }
 
 .flashcard-detail {
-    width: 55%;
+    width: 70%;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -97,17 +97,17 @@ body {
 }
 
 textarea {
-    width: 100%;
+    width: 70%;
     padding: 10px 15px;
     border: 1px solid #ccc;
     border-radius: 4px;
     resize: none;
     box-sizing: border-box;
+    font-size: 14px;
 }
 
 .button-container {
     display: flex;
-    justify-content: center;
     margin-top: 15px;
 }
 
@@ -123,4 +123,57 @@ button {
 
 button:hover {
     background-color: #0056b3;
+}
+
+#filterButton {
+    text-align: center;
+    font-weight: bold;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#filterButton:hover {
+    background-color: #0056b3;
+}
+
+#conjugationTableContainer {
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.table-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+}
+
+#conjugation-table, #past-conjugation-table {
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: auto;
+    display: inline-table;
+    width: 100%;
+}
+
+#conjugation-table th, #conjugation-table td,
+#past-conjugation-table th, #past-conjugation-table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+    white-space: nowrap;
+}
+
+#conjugation-table th, #past-conjugation-table th {
+    background-color: #f4f4f4;
+}
+
+.conjugation-cell {
+    cursor: pointer;
 }

@@ -16,6 +16,10 @@ body {
     text-align: center;
 }
 
+textarea {
+    font-size: 16px;
+}
+
 .container {
     margin-left: 220px;
     padding: 20px;
@@ -51,7 +55,7 @@ body {
 }
 
 .show-answer-btn:hover, .rating-btn:hover {
-    background-color: #444;
+    background-color: #0056b3;
 }
 
 .delete-btn {

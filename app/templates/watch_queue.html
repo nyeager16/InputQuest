@@ -21,8 +21,22 @@
             <iframe src="https://www.youtube.com/embed/{{ video.url|youtube_id }}?start={{ video.start }}&end={{ video.end }}" 
                     frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
             </iframe>
+            <div id="video-id" data-video-id="{{ video.id }}" style="display: none;"></div>
         </div>
         <div class="action-buttons">
+            <button id="generate-questions">Generate Questions</button>
+            <div id="questions-container" style="display: none;">
+                <!-- Questions will be injected here -->
+            </div>
+            <div id="submit-answers-container" style="display: none;">
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="submit_answers">
+                    <input type="hidden" name="video_id" value="{{ video.id }}">
+                    <div id="questions-form"></div>
+                    <button type="submit">Submit Answers</button>
+                </form>
+            </div>
             <form method="post" action="">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="watched">
@@ -39,6 +53,7 @@
             </form>
         </div>
     </div>
+    <script src="{% static 'app/js/watch_queue.js' %}"></script>
 </body>
 </html>
     

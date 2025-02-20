@@ -22,7 +22,6 @@ body {
     padding: 1px;
     overflow-y: auto;
     max-height: calc(100vh - 60px);
-    scrollbar-width: thin;
     scrollbar-color: #007bff transparent;
     display: flex;
     flex-direction: column;
@@ -69,7 +68,7 @@ body {
 }
 
 .flashcard-detail {
-    width: 55%;
+    width: 70%;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -98,12 +97,13 @@ body {
 }
 
 textarea {
-    width: 100%;
+    width: 70%;
     padding: 10px 15px;
     border: 1px solid #ccc;
     border-radius: 4px;
     resize: none;
     box-sizing: border-box;
+    font-size: 14px;
 }
 
 .button-container {

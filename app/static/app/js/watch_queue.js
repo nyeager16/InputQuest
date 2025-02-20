@@ -1,46 +1,51 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const videosData = document.getElementById("videos-data").textContent;
-    const videos = JSON.parse(videosData);
-
-    let currentIndex = 0;
-    const videoFrame = document.getElementById("video-frame");
-
-    // Function to load video at the current index
-    const loadVideo = (index) => {
-        if (index < 0 || index >= videos.length) return;
-        videoFrame.src = `https://www.youtube.com/embed/${videos[index].url}`;
-        
-        videoFrame.classList.remove("visible");
-        videoFrame.classList.add("hidden"); // Start with hidden for transition
-        
-        setTimeout(() => {
-            videoFrame.classList.remove("hidden");
-            videoFrame.classList.add("visible");
-        }, 100); // Delay to trigger transition
-    };
-
-    // Load the first video
-    loadVideo(currentIndex);
-
-    // Handle scroll events
-    const handleScroll = (event) => {
-        const deltaY = event.deltaY;
-
-        if (deltaY > 0 && currentIndex < videos.length - 1) {
-            // Scroll down to the next video
-            currentIndex++;
-            videoFrame.classList.remove("visible");
-            videoFrame.classList.add("hidden");
-            setTimeout(() => loadVideo(currentIndex), 500); // Wait for the fade-out transition
-        } else if (deltaY < 0 && currentIndex > 0) {
-            // Scroll up to the previous video
-            currentIndex--;
-            videoFrame.classList.remove("visible");
-            videoFrame.classList.add("hidden");
-            setTimeout(() => loadVideo(currentIndex), 500); // Wait for the fade-out transition
+// from: https://docs.djangoproject.com/en/5.1/howto/csrf/
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
-    };
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
 
-    // Add scroll listener
-    window.addEventListener("wheel", handleScroll, { passive: true });
+document.getElementById("generate-questions").addEventListener("click", function() {
+    let button = this;
+    let container = document.getElementById("questions-container");
+    let submitAnswersContainer = document.getElementById("submit-answers-container");
+    let questionsForm = document.getElementById("questions-form");
+
+    let videoId = document.getElementById("video-id").getAttribute("data-video-id");
+
+    fetch(`/generate_questions/${videoId}/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': csrftoken,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        button.style.display = "none"; 
+        container.style.display = "block";
+        submitAnswersContainer.style.display = "block";
+
+        questionsForm.innerHTML = '';
+
+        // Dynamically create the question inputs
+        data.questions.forEach((q, index) => {
+            let questionHtml = `<p>${index + 1}. ${q}</p>`;
+            questionHtml += `<input type='text' name='answer_${index}' class='question-input' required>`;
+            questionsForm.innerHTML += questionHtml;
+        });
+
+        container.innerHTML = html;
+    })
+    .catch(error => console.error("Error fetching questions:", error));
 });

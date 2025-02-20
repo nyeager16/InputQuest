@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         editFlashcardBtn.style.display = 'inline';
 
         // Make the AJAX POST request to send the new definition to the server
-        fetch(`/app/update-definition/${wordId}/`, {
+        fetch(`/update-definition/${wordId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
