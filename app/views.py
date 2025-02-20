@@ -8,7 +8,7 @@ from .models import Video, Channel, WatchHistory, WordInstance, Word, UserWord, 
 from django.db import models
 from django.db.models import Case, When, Count, F, Q, Prefetch
 from .forms import SignUpForm
-from .tasks import calculate_video_CI
+from .tasks import calculate_video_CI, add_definitions
 from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words, get_conjugation_table, remove_words
 import json
 from fsrs import Scheduler, Rating
@@ -434,6 +434,12 @@ def learn_word(request, word):
         else:
             return redirect('learn_word', word=child_word.root.word_text)
     
+    definition = Definition.objects.get(user=None, word=root_word)
+    if not definition.definition_text:
+        add_definitions([root_word.id], root_word.lang.abb)
+        definition = ""
+    else: definition = definition.definition_text
+    
     related_words = Word.objects.filter(Q(id=root_word.id) | Q(root=root_word))
 
     word_instances = WordInstance.objects.filter(word__in=related_words)
@@ -455,6 +461,7 @@ def learn_word(request, word):
     words = WordInstance.objects.filter(video__id=video_id, word__in=related_words)
 
     return render(request, 'learn_word.html', {'word': word, 
+                                               'definition': definition,
                                                'words': words,
                                                'video_data': video_data,
                                                'conjugation_table': conjugation_table[0],

@@ -15,202 +15,219 @@
     {% endblock %}
     <div class="content">
         <div id="conjugationTableContainer">
-            {% if table_type == 0 %}
-                <div class="table-wrapper">
-                    <table id="conjugation-table">
-                        <thead>
-                            <tr>
-                                <th colspan="3" style="background-color: #406678; text-align: center;">Present</th>
-                            </tr>
-                            <tr>
-                                <th></th>
-                                <th style="background-color: #c0cacf;">Singular</th>
-                                <th style="background-color: #727678;">Plural</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>1p</strong></td>
-                                <td>{{ conjugation_table.0.1 }}</td>
-                                <td>{{ conjugation_table.1.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>2p</strong></td>
-                                <td>{{ conjugation_table.2.1 }}</td>
-                                <td>{{ conjugation_table.3.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>3p</strong></td>
-                                <td>{{ conjugation_table.4.1 }}</td>
-                                <td>{{ conjugation_table.5.1 }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <table id="past-conjugation-table">
-                        <thead>
-                            <tr>
-                                <th colspan="6" style="background-color: #406678; text-align: center;">Past</th>
-                            </tr>
-                            <tr>
-                                <th></th>
-                                <th style="background-color: #c0cacf;">m.</th>
-                                <th style="background-color: #c0cacf;">f.</th>
-                                <th style="background-color: #c0cacf;">n.</th>
-                                <th style="background-color: #727678;">m. pl.</th>
-                                <th style="background-color: #727678;">other pl.</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>1p</strong></td>
-                                <td>{{ conjugation_table.6.1 }}</td>
-                                <td>{{ conjugation_table.7.1 }}</td>
-                                <td>{{ conjugation_table.8.1 }}</td>
-                                <td>{{ conjugation_table.9.1 }}</td>
-                                <td>{{ conjugation_table.10.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>2p</strong></td>
-                                <td>{{ conjugation_table.11.1 }}</td>
-                                <td>{{ conjugation_table.12.1 }}</td>
-                                <td>{{ conjugation_table.13.1 }}</td>
-                                <td>{{ conjugation_table.14.1 }}</td>
-                                <td>{{ conjugation_table.15.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>3p</strong></td>
-                                <td>{{ conjugation_table.16.1 }}</td>
-                                <td>{{ conjugation_table.17.1 }}</td>
-                                <td>{{ conjugation_table.18.1 }}</td>
-                                <td>{{ conjugation_table.19.1 }}</td>
-                                <td>{{ conjugation_table.20.1 }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="left-panel">
+                <table class="word-definition-table">
+                    <tbody>
+                        <tr>
+                            <td><strong>{{ word }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>{{ definition }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="video-container">
+                    <iframe id="player"
+                        src="https://www.youtube.com/embed/{{ video_data.url }}?enablejsapi=1"
+                        frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
+                    </iframe>
                 </div>
-            {% elif table_type == 1 %}
-                <div class="table-wrapper">
-                    <table id="conjugation-table">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Singular</th>
-                                <th>Plural</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Nom</strong></td>
-                                <td>{{ conjugation_table.0.1 }}</td>
-                                <td>{{ conjugation_table.7.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Gen</strong></td>
-                                <td>{{ conjugation_table.1.1 }}</td>
-                                <td>{{ conjugation_table.8.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Dat</strong></td>
-                                <td>{{ conjugation_table.2.1 }}</td>
-                                <td>{{ conjugation_table.9.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Acc</strong></td>
-                                <td>{{ conjugation_table.3.1 }}</td>
-                                <td>{{ conjugation_table.10.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Instr</strong></td>
-                                <td>{{ conjugation_table.4.1 }}</td>
-                                <td>{{ conjugation_table.11.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Loc</strong></td>
-                                <td>{{ conjugation_table.5.1 }}</td>
-                                <td>{{ conjugation_table.12.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Voc</strong></td>
-                                <td>{{ conjugation_table.6.1 }}</td>
-                                <td>{{ conjugation_table.13.1 }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="navigation-controls">
+                    <button class="nav-button" onclick="previousTimestamp()">⬅</button>
+                    <button class="nav-button" onclick="skipToCurrent()">Skip to "{{ currentWord }}"</button>
+                    <button class="nav-button" onclick="nextTimestamp()">➡</button>
                 </div>
-            {% elif table_type == 2 %}
-                <div class="table-wrapper">
-                    <table id="conjugation-table">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th style="background-color: #c0cacf;">m.</th>
-                                <th style="background-color: #c0cacf;">n.</th>
-                                <th style="background-color: #c0cacf;">f.</th>
-                                <th style="background-color: #727678;">m. pl.</th>
-                                <th style="background-color: #727678;">other pl.</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Nom</strong></td>
-                                <td>{{ conjugation_table.0.1 }}</td>
-                                <td>{{ conjugation_table.1.1 }}</td>
-                                <td>{{ conjugation_table.2.1 }}</td>
-                                <td>{{ conjugation_table.3.1 }}</td>
-                                <td>{{ conjugation_table.4.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Gen</strong></td>
-                                <td colspan="2">{{ conjugation_table.5.1 }}</td>
-                                <td>{{ conjugation_table.6.1 }}</td>
-                                <td colspan="2">{{ conjugation_table.7.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Dat</strong></td>
-                                <td colspan="2">{{ conjugation_table.8.1 }}</td>
-                                <td>{{ conjugation_table.9.1 }}</td>
-                                <td colspan="2">{{ conjugation_table.10.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Acc</strong></td>
-                                <td>{{ conjugation_table.11.1 }}</td>
-                                <td>{{ conjugation_table.12.1 }}</td>
-                                <td>{{ conjugation_table.13.1 }}</td>
-                                <td>{{ conjugation_table.14.1 }}</td>
-                                <td>{{ conjugation_table.15.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Instr</strong></td>
-                                <td colspan="2">{{ conjugation_table.16.1 }}</td>
-                                <td>{{ conjugation_table.17.1 }}</td>
-                                <td colspan="2">{{ conjugation_table.18.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Loc</strong></td>
-                                <td colspan="2">{{ conjugation_table.19.1 }}</td>
-                                <td>{{ conjugation_table.20.1 }}</td>
-                                <td colspan="2">{{ conjugation_table.21.1 }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Voc</strong></td>
-                                <td>{{ conjugation_table.22.1 }}</td>
-                                <td>{{ conjugation_table.23.1 }}</td>
-                                <td>{{ conjugation_table.24.1 }}</td>
-                                <td>{{ conjugation_table.25.1 }}</td>
-                                <td>{{ conjugation_table.26.1 }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            {% endif %}
-        </div>
-        <iframe id="player" width="560" height="315"
-            src="https://www.youtube.com/embed/{{ video_data.url }}?enablejsapi=1"
-            frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        <div class="navigation-controls">
-            <button class="nav-button" onclick="previousTimestamp()">⬅</button>
-            <button class="nav-button" onclick="skipToCurrent()">Skip to "{{ currentWord }}"</button>
-            <button class="nav-button" onclick="nextTimestamp()">➡</button>
+            </div>
+            <div class="right-panel">
+                {% if table_type == 0 %}
+                    <div class="table-wrapper">
+                        <table id="conjugation-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="3" style="background-color: #406678; text-align: center;">Present</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th style="background-color: #c0cacf;">Singular</th>
+                                    <th style="background-color: #727678;">Plural</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>1p</strong></td>
+                                    <td>{{ conjugation_table.0.1 }}</td>
+                                    <td>{{ conjugation_table.1.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>2p</strong></td>
+                                    <td>{{ conjugation_table.2.1 }}</td>
+                                    <td>{{ conjugation_table.3.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>3p</strong></td>
+                                    <td>{{ conjugation_table.4.1 }}</td>
+                                    <td>{{ conjugation_table.5.1 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table id="past-conjugation-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="6" style="background-color: #406678; text-align: center;">Past</th>
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <th style="background-color: #c0cacf;">m.</th>
+                                    <th style="background-color: #c0cacf;">f.</th>
+                                    <th style="background-color: #c0cacf;">n.</th>
+                                    <th style="background-color: #727678;">m. pl.</th>
+                                    <th style="background-color: #727678;">other pl.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>1p</strong></td>
+                                    <td>{{ conjugation_table.6.1 }}</td>
+                                    <td>{{ conjugation_table.7.1 }}</td>
+                                    <td>{{ conjugation_table.8.1 }}</td>
+                                    <td>{{ conjugation_table.9.1 }}</td>
+                                    <td>{{ conjugation_table.10.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>2p</strong></td>
+                                    <td>{{ conjugation_table.11.1 }}</td>
+                                    <td>{{ conjugation_table.12.1 }}</td>
+                                    <td>{{ conjugation_table.13.1 }}</td>
+                                    <td>{{ conjugation_table.14.1 }}</td>
+                                    <td>{{ conjugation_table.15.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>3p</strong></td>
+                                    <td>{{ conjugation_table.16.1 }}</td>
+                                    <td>{{ conjugation_table.17.1 }}</td>
+                                    <td>{{ conjugation_table.18.1 }}</td>
+                                    <td>{{ conjugation_table.19.1 }}</td>
+                                    <td>{{ conjugation_table.20.1 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% elif table_type == 1 %}
+                    <div class="table-wrapper">
+                        <table id="conjugation-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Singular</th>
+                                    <th>Plural</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Nom</strong></td>
+                                    <td>{{ conjugation_table.0.1 }}</td>
+                                    <td>{{ conjugation_table.7.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Gen</strong></td>
+                                    <td>{{ conjugation_table.1.1 }}</td>
+                                    <td>{{ conjugation_table.8.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dat</strong></td>
+                                    <td>{{ conjugation_table.2.1 }}</td>
+                                    <td>{{ conjugation_table.9.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Acc</strong></td>
+                                    <td>{{ conjugation_table.3.1 }}</td>
+                                    <td>{{ conjugation_table.10.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Instr</strong></td>
+                                    <td>{{ conjugation_table.4.1 }}</td>
+                                    <td>{{ conjugation_table.11.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Loc</strong></td>
+                                    <td>{{ conjugation_table.5.1 }}</td>
+                                    <td>{{ conjugation_table.12.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Voc</strong></td>
+                                    <td>{{ conjugation_table.6.1 }}</td>
+                                    <td>{{ conjugation_table.13.1 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% elif table_type == 2 %}
+                    <div class="table-wrapper">
+                        <table id="conjugation-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th style="background-color: #c0cacf;">m.</th>
+                                    <th style="background-color: #c0cacf;">n.</th>
+                                    <th style="background-color: #c0cacf;">f.</th>
+                                    <th style="background-color: #727678;">m. pl.</th>
+                                    <th style="background-color: #727678;">other pl.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Nom</strong></td>
+                                    <td>{{ conjugation_table.0.1 }}</td>
+                                    <td>{{ conjugation_table.1.1 }}</td>
+                                    <td>{{ conjugation_table.2.1 }}</td>
+                                    <td>{{ conjugation_table.3.1 }}</td>
+                                    <td>{{ conjugation_table.4.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Gen</strong></td>
+                                    <td colspan="2">{{ conjugation_table.5.1 }}</td>
+                                    <td>{{ conjugation_table.7.1 }}</td>
+                                    <td colspan="2">{{ conjugation_table.9.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dat</strong></td>
+                                    <td colspan="2">{{ conjugation_table.10.1 }}</td>
+                                    <td>{{ conjugation_table.12.1 }}</td>
+                                    <td colspan="2">{{ conjugation_table.14.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Acc</strong></td>
+                                    <td>{{ conjugation_table.15.1 }}</td>
+                                    <td>{{ conjugation_table.16.1 }}</td>
+                                    <td>{{ conjugation_table.17.1 }}</td>
+                                    <td>{{ conjugation_table.18.1 }}</td>
+                                    <td>{{ conjugation_table.19.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Instr</strong></td>
+                                    <td colspan="2">{{ conjugation_table.20.1 }}</td>
+                                    <td>{{ conjugation_table.22.1 }}</td>
+                                    <td colspan="2">{{ conjugation_table.24.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Loc</strong></td>
+                                    <td colspan="2">{{ conjugation_table.25.1 }}</td>
+                                    <td>{{ conjugation_table.27.1 }}</td>
+                                    <td colspan="2">{{ conjugation_table.29.1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Voc</strong></td>
+                                    <td>{{ conjugation_table.30.1 }}</td>
+                                    <td>{{ conjugation_table.31.1 }}</td>
+                                    <td>{{ conjugation_table.32.1 }}</td>
+                                    <td>{{ conjugation_table.33.1 }}</td>
+                                    <td>{{ conjugation_table.34.1 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
     <script src="https://www.youtube.com/iframe_api"></script>

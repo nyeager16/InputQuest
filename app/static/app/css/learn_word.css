@@ -11,36 +11,70 @@ body {
     text-align: center;
 }
 
-#player {
+.layout-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 20px;
+}
+
+.left-panel {
+    width: 40%;
+    min-width: 300px;
+}
+
+.right-panel {
+    width: 55%;
+    min-width: 400px;
+    margin-right: 20px;
+}
+
+.word-definition-table {
     width: 100%;
-    max-width: 800px;
-    height: 450px;
-    margin: 20px auto;
-    border: none;
-    border-radius: 8px;
-    transition: transform 0.3s ease;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.word-definition-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+
+.video-container {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    padding-top: 56.25%;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .navigation-controls {
     display: flex;
-    align-items: center;
     justify-content: center;
-    margin-top: 20px;
     gap: 10px;
+    margin-top: 10px;
 }
 
 .nav-button {
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 12px 20px;
+    padding: 10px 15px;
     font-size: 16px;
     cursor: pointer;
-    border-radius: 8px;
-    transition: background-color 0.3s, transform 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
 }
 
 .nav-button:hover {
@@ -53,34 +87,37 @@ body {
 }
 
 #conjugationTableContainer {
-    margin-bottom: 20px;
-    text-align: center;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+    padding: 20px;
 }
 
-.table-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: max-content;
+@media (max-width: 900px) {
+    #conjugationTableContainer {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .left-panel, .right-panel {
+        width: 100%;
+    }
 }
 
 #conjugation-table, #past-conjugation-table {
-    border-collapse: collapse;
-    margin-top: 20px;
-    table-layout: auto;
-    display: inline-table;
     width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
 }
 
 #conjugation-table th, #conjugation-table td,
 #past-conjugation-table th, #past-conjugation-table td {
-    padding: 10px;
-    text-align: center;
+    padding: 8px;
     border: 1px solid #ddd;
-    white-space: nowrap;
+    text-align: center;
 }
 
 #conjugation-table th, #past-conjugation-table th {

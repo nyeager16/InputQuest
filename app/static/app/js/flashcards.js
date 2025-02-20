@@ -179,11 +179,11 @@ flashcardItems.forEach(item => {
 
                         let rowHTML = '';
                         for (let i = 0; i < 7; i++) {
-                            const m = conjugationTable[i];
-                            const n = conjugationTable[i];
-                            const f = conjugationTable[i];
-                            const mpl = conjugationTable[i];
-                            const opl = conjugationTable[i];
+                            const m = conjugationTable[i*5];
+                            const n = conjugationTable[i*5+1];
+                            const f = conjugationTable[i*5+2];
+                            const mpl = conjugationTable[i*5+3];
+                            const opl = conjugationTable[i*5+4];
                             
                             if (rowLabels[i] === "Nom" || rowLabels[i] === "Acc" || rowLabels[i] === "Voc") {
                                 rowHTML += `
@@ -201,7 +201,7 @@ flashcardItems.forEach(item => {
                                         <td class="conjugation-cell" data-word-id="${mpl[0]}" id="cell-${mpl[0]}">
                                             ${mpl[1]}
                                         </td>
-                                        <td class="conjugation-cell" data-word-id="${mpl[0]}" id="cell-${mpl[0]}">
+                                        <td class="conjugation-cell" data-word-id="${opl[0]}" id="cell-${mpl[0]}">
                                             ${mpl[1]}
                                         </td>
                                     </tr>
@@ -210,19 +210,20 @@ flashcardItems.forEach(item => {
                                 rowHTML += `
                                     <tr>
                                         <td><strong>${rowLabels[i]}</strong></td>
-                                        <td colspan="2" class="conjugation-cell" data-word-id="${singular[0]}" id="cell-${singular[0]}">
-                                            ${singular[1]}
+                                        <td colspan="2" class="conjugation-cell" data-word-id="${m[0]}" id="cell-${m[0]}">
+                                            ${m[1]}
                                         </td>
-                                        <td class="conjugation-cell" data-word-id="${singular[0]}" id="cell-${singular[0]}">
-                                            ${singular[1]}
+                                        <td class="conjugation-cell" data-word-id="${f[0]}" id="cell-${f[0]}">
+                                            ${f[1]}
                                         </td>
-                                        <td colspan="2" class="conjugation-cell" data-word-id="${singular[0]}" id="cell-${singular[0]}">
-                                            ${singular[1]}
+                                        <td colspan="2" class="conjugation-cell" data-word-id="${opl[0]}" id="cell-${opl[0]}">
+                                            ${opl[1]}
                                         </td>
                                     </tr>
                                 `;
                             }
                         }
+                        tableBody.innerHTML = rowHTML;
                     }
         
                     // Show the table

@@ -46,7 +46,6 @@ def add_definitions(word_ids, source):
     translator = GoogleTranslator(source=source, target='en')
     for word_id in word_ids:
         word = Word.objects.get(id=word_id)
-        print(word)
         try:
             translated_word = translator.translate(text=word.word_text)
         except TranslationNotFound:
