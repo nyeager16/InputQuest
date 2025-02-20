@@ -1,11 +1,4 @@
 from django.core.management.base import BaseCommand
-from app.models import Word, Channel, Video, WordInstance, Definition, UserWord, UserPreferences, User
-from django.db import transaction, connection
-
-class Command(BaseCommand):
-    help = 'Deletes all data from Word, Channel, Video, WordInstance, and Definition models'
-
-    from django.core.management.base import BaseCommand
 from django.db import connection, transaction
 from app.models import Word, Channel, Video, WordInstance, Definition, UserWord, UserPreferences, User
 
@@ -24,14 +17,21 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Successfully deleted records and reset sequences.'))
 
     def delete_in_batches(self, model, batch_size):
+        """Fetches and deletes objects in batches to avoid memory overload."""
         total_deleted = 0
-        while model.objects.exists():
-            deleted_count, _ = model.objects.all()[:batch_size].delete()
+        while True:
+            ids = list(model.objects.values_list('id', flat=True)[:batch_size])
+            if not ids:
+                break
+
+            deleted_count, _ = model.objects.filter(id__in=ids).delete()
             total_deleted += deleted_count
+            self.stdout.write(self.style.SUCCESS(f'Deleted {deleted_count} records from {model.__name__}'))
 
         self.stdout.write(self.style.SUCCESS(f'Total deleted from {model.__name__}: {total_deleted}'))
 
     def reset_sequences(self):
+        """Resets the primary key sequence for all models."""
         with connection.cursor() as cursor:
             sequences = [
                 "app_word_id_seq",
@@ -44,6 +44,3 @@ class Command(BaseCommand):
             ]
             for seq in sequences:
                 cursor.execute(f"ALTER SEQUENCE {seq} RESTART WITH 1;")
-
-
-# python manage.py resetdb
