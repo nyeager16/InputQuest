@@ -349,3 +349,29 @@ document.getElementById('filterButton').addEventListener('click', function () {
         alert('An error occurred while filtering.');
     });
 });
+
+document.addEventListener('keydown', function (event) {
+    const pressedKey = event.key.toLowerCase();
+    if (!/^[a-z]$/.test(pressedKey)) return; // Ensure it's a letter
+
+    const flashcardList = document.getElementById('wordList');
+    const flashcards = document.querySelectorAll('.flashcard-item');
+
+    for (const flashcard of flashcards) {
+        const wordText = flashcard.textContent.trim().toLowerCase();
+        if (wordText.startsWith(pressedKey)) {
+            // Scroll to the selected word
+            flashcard.scrollIntoView({ block: 'center' });
+
+            // Remove active class from all items
+            flashcards.forEach(item => item.classList.remove('active'));
+
+            // Add active class to the selected item
+            flashcard.classList.add('active');
+
+            // Simulate a click event to load the definition
+            flashcard.click();
+            break;
+        }
+    }
+});

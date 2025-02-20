@@ -3,7 +3,6 @@ body, html {
     padding: 0;
     font-family: Arial, sans-serif;
     scroll-behavior: smooth;
-    overflow: hidden;
 }
 
 .content {
@@ -27,7 +26,6 @@ iframe {
     border-radius: 8px;
 }
 
-
 .action-buttons {
     display: flex;
     flex-direction: column;
@@ -38,7 +36,7 @@ iframe {
 .action-buttons button {
     margin: 10px 0;
     padding: 10px 20px;
-    background-color: #007BFF;
+    background-color: #3498db;
     color: white;
     border: none;
     border-radius: 5px;
@@ -48,5 +46,5 @@ iframe {
 }
 
 .action-buttons button:hover {
-    background-color: #0056b3;
+    background-color: #2980b9;
 }
