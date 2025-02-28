@@ -15,10 +15,15 @@
     {% include 'sidebar.html' %}
     {% endblock %}
     <div class="container">
-        <h2>Select Comprehensible Input Percentage</h2>
+        <h2>Comprehensible Input Percentage</h2>
         <div class="slider-container">
             <input type="range" min="0" max="100" value="{{ percentage }}" class="slider" id="comprehensibleInput">
             <p class="percentage" id="percentage">{{ percentage }}%</p>
+        </div>
+        <h2>Max Clip Length (Seconds)</h2>
+        <div class="slider-container">
+            <input type="range" min="30" max="600" value="{{ max_clip_length }}" class="slider" id="clipLength">
+            <p class="percentage" id="seconds">{{ max_clip_length }}</p>
         </div>
         <button class="button" id="goToQueue">Go to Queue</button>
     </div>

@@ -1,10 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 from django.utils.timezone import now
-from datetime import timedelta
-from fsrs import Scheduler, Card, ReviewLog
+from fsrs import Card
 
 class Language(models.Model):
     name = models.CharField(max_length=100)
@@ -33,6 +31,20 @@ class Video(models.Model):
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
     auto_generated = models.BooleanField(default=True)
 
+class Sentence(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    text = models.CharField(max_length=300, default="")
+    start = models.IntegerField(default=0, db_index=True)
+    end = models.IntegerField(default=0, db_index=True)
+    def __str__(self):
+        return self.text
+    
+class Question(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    text = models.CharField(max_length=150, default="")
+    start = models.IntegerField(default=0, db_index=True)
+    end = models.IntegerField(default=0, db_index=True)
+
 class UserVideo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
@@ -42,15 +54,15 @@ class WatchHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watch_history')
     video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='watch_history')
     watched_at = models.DateTimeField(default=now)
-    start = models.FloatField(default=0.0)
-    end = models.FloatField(default=0.0)
+    start = models.IntegerField(default=0)
+    end = models.IntegerField(default=0)
     completed = models.BooleanField(default=False)
 
 class WordInstance(models.Model):
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
-    start = models.CharField(max_length=10, db_index=True)
-    end = models.CharField(max_length=10, db_index=True)
+    start = models.IntegerField(default=0, db_index=True)
+    end = models.IntegerField(default=0, db_index=True)
     def __str__(self):
         return self.word.word_text
 
@@ -61,7 +73,9 @@ class UserPreferences(models.Model):
     comprehension_level_max = models.IntegerField(default=100)
     queue_CI = models.IntegerField(default=100)
     desired_retention = models.FloatField(default=0.9)
+    fsrs = models.BooleanField(default=True)
     vocab_filter = models.IntegerField(default=0)
+    max_clip_length = models.IntegerField(default=300)
 
 class Definition(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
@@ -94,7 +108,7 @@ class UserWord(models.Model):
 class Review(models.Model):
     user_word = models.ForeignKey(UserWord, on_delete=models.CASCADE)
     review_time = models.DateTimeField(auto_now_add=True)
-    correct = models.BooleanField()  # Whether the user answered correctly
-    familiarity_score_before = models.FloatField()  # Familiarity score before review
-    familiarity_score_after = models.FloatField()  # Familiarity score after review
+    correct = models.BooleanField()
+    familiarity_score_before = models.FloatField()
+    familiarity_score_after = models.FloatField()
 

@@ -1,17 +1,18 @@
 from collections import defaultdict
+from random import sample
+from fsrs import Scheduler, Rating
+import json
 from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils.timezone import now
-from .models import Video, Channel, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition
 from django.db import models
 from django.db.models import Case, When, Count, F, Q, Prefetch
+from .models import Video, Sentence, Channel, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition, Question, User
 from .forms import SignUpForm
 from .tasks import calculate_video_CI, add_definitions
-from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words, get_conjugation_table, remove_words
-import json
-from fsrs import Scheduler, Rating
+from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words, get_conjugation_table, remove_words, generate_question, group_sentences
 
 def all_videos(request):
     # Check if the user is authenticated
@@ -66,21 +67,6 @@ def all_videos(request):
         'message': message,
     })
 
-@login_required(login_url="/login/")
-def update_queue_ci(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        new_percentage = int(data.get('percentage'))
-        
-        # Update the user's preference
-        preference, created = UserPreferences.objects.get_or_create(user=request.user)
-        preference.queue_CI = new_percentage
-        preference.save()
-
-        return JsonResponse({'status': 'success', 'percentage': new_percentage})
-
-    return JsonResponse({'status': 'error'})
-
 class VideoDetailView(View):
     def get(self, request, pk):
         video = get_object_or_404(Video, pk=pk)
@@ -115,7 +101,7 @@ class VideoDetailView(View):
         # Exclude known words and limit results
         new_words = list(common_words.exclude(root_word__in=known_words)[:word_limit])
 
-        # Retrieve all child words in a single query
+        # Retrieve all child words
         root_word_ids = [word['root_word_id'] for word in new_words]
 
         child_words_mapping = defaultdict(set)
@@ -216,14 +202,15 @@ def watch(request):
         user = request.user
         user_preferences = UserPreferences.objects.get(user=user)
         percentage = user_preferences.queue_CI
-    return render(request, 'watch.html', {'percentage': percentage})
+        max_clip_length = user_preferences.max_clip_length
+    return render(request, 'watch.html', {'percentage': percentage, 'max_clip_length': max_clip_length})
 
 @login_required(login_url="/login/")
 def watch_queue(request):
     user = request.user
 
     if request.method == 'POST':
-        action = request.POST.get('action')  # Determine which button was clicked
+        action = request.POST.get('action')
 
         if action == 'watched':
             id = request.POST.get('video_id')
@@ -242,25 +229,103 @@ def watch_queue(request):
         return redirect(request.path_info)
 
     user_preferences = UserPreferences.objects.get(user=user)
-    percentage = user_preferences.queue_CI
-    count = 10
+    percentage, clip_length = user_preferences.queue_CI, user_preferences.max_clip_length
+    count = 1
 
-    video_data = get_CI_video_sections(user, percentage, count)
+    video_data = get_CI_video_sections(user, percentage, clip_length, count)
     id, start, end = video_data[0]
-    url = Video.objects.get(id=id).url
-    video = {'id': id, 'url': url, 'start': round(start), 'end': round(end)}
+    video_object = Video.objects.get(id=id)
+    url, title = video_object.url, video_object.title
+    video = {'id': id, 'url': url, 'title': title, 'start': start, 'end': end}
 
-    return render(request, 'watch_queue.html', {'video': video})
+    clip_start = f"{start // 60}:{start % 60:02d}"
+    clip_end = f"{end // 60}:{end % 60:02d}"
 
-def generate_questions(request, video_id):
-    questions = [
-        "Test Question 1",
-        "Test Question 2",
-        "Test Question 3",
-        "Test Question 4",
-        "Test Question 5"
+    word_limit = 20
+    common_words = (
+        WordInstance.objects
+        .filter(video=id, start__gte=start, end__lte=end)
+        .annotate(
+            root_word=Case(
+                When(word__root__isnull=True, then=F('word__word_text')),
+                default=F('word__root__word_text'),
+                output_field=models.CharField()
+            ),
+            root_word_id=Case(
+                When(word__root__isnull=True, then=F('word__id')),
+                default=F('word__root__id'),
+                output_field=models.IntegerField()
+            ),
+        )
+        .values('root_word', 'root_word_id')
+        .annotate(word_count=Count('id'))
+        .order_by('-word_count')
+    )
+    known_words = set()
+    if request.user.is_authenticated:
+        known_words = set(UserWord.objects.filter(user=request.user).values_list('word__word_text', flat=True))
+    new_words = list(common_words.exclude(root_word__in=known_words)[:word_limit])
+    
+    return render(request, 'watch_queue.html', {'video': video,
+                                                'new_words': new_words,
+                                                'clip_start': clip_start,
+                                                'clip_end': clip_end})
+
+@login_required(login_url="/login/")
+def update_queue_ci(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        new_percentage = int(data.get('percentage'))
+        clip_length = int(data.get('clip_length'))
+        
+        # Update the user's preference
+        preference, created = UserPreferences.objects.get_or_create(user=request.user)
+        preference.queue_CI = new_percentage
+        preference.max_clip_length = clip_length
+        preference.save()
+
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error'})
+
+def generate_questions(request, video_id, start, end):
+    min_duration = 30
+    length = end-start
+    question_count = min(length//min_duration, 10)
+
+    existing_questions = Question.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
+    existing_questions_times = list(existing_questions.values_list('start', 'end'))
+    clip_questions = [question.text for question in existing_questions]
+
+    sentences = Sentence.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
+    groups = group_sentences(sentences, min_duration)
+
+    def overlaps_with_existing(group_start, group_end):
+        for q_start, q_end in existing_questions_times:
+            if not (group_end <= q_start or group_start >= q_end):
+                return True
+        return False
+    
+    new_groups = [
+        group for group in groups 
+        if not overlaps_with_existing(group['start'], group['end'])
     ]
-    return JsonResponse({"questions": questions})
+
+    question_objects = []
+    question_texts = []
+    for group in new_groups:
+        question = generate_question(group['text'])
+        question_texts.append(question)
+        question_object = Question(video_id=video_id, text=question, 
+                                   start=group['start'], end=group['end'])
+        question_objects.append(question_object)
+    if question_objects: Question.objects.bulk_create(question_objects)
+
+    clip_questions += question_texts
+    clip_questions = sample(clip_questions, min(question_count, len(clip_questions)))
+
+
+    return JsonResponse({"questions": clip_questions})
 
 @login_required(login_url="/login/")
 def update_comprehension_filter(request):
@@ -382,18 +447,51 @@ def update_definition(request, word_id):
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def signup(request):
+    max_user_count = 50
     if request.method == 'POST':
+        if User.objects.count() > max_user_count:
+            return redirect('signup')
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
             setup_user(user)
             return redirect('login')
-    else:
-        form = SignUpForm()
-    return render(request, 'registration/signup.html', {'form': form})
+    max_users = False
+    if User.objects.count() > max_user_count:
+        max_users = True
+    form = SignUpForm()
+    return render(request, 'registration/signup.html', {'form': form, 'max_users': max_users})
 
 @login_required(login_url="/login/")
 def account(request):
+    user = request.user
+    user_preferences = UserPreferences.objects.get(user=user)
+    email = user.email
+    fsrs = user_preferences.fsrs
+    retention_rate = round(user_preferences.desired_retention*100)
+    return render(request, 'account.html', {'email': email, 
+                                            'retention_rate': retention_rate,
+                                            'fsrs': fsrs})
+
+@login_required(login_url="/login/")
+def save_account_settings(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user = request.user
+            user_preferences = UserPreferences.objects.get(user=user)
+            if data['fsrs'] == 'fsrs': user_preferences.fsrs = True
+            else: user_preferences.fsrs = False
+            user_preferences.desired_retention = int(data['retention_rate'])/100
+            user_preferences.save()
+
+            return JsonResponse({'message': 'Data received successfully', 'data': data}, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@login_required(login_url="/login/")
+def vocab(request):
 
     return render(request, 'account.html')
 
@@ -435,6 +533,18 @@ def learn(request):
 
     return render(request, 'learn.html', {'new_words': new_words})
 
+@login_required(login_url="/login/")
+def add_vocab(request, word_id):
+    if request.method == 'POST':
+        user = request.user
+        word = Word.objects.get(id=word_id).word_text
+
+        add_words(user, [word_id])
+        calculate_video_CI(user.id)
+        return redirect('learn_word', word=word)
+
+    return redirect('learn_word', word=word)
+
 def learn_word(request, word):
     root_word = Word.objects.filter(word_text=word, root=None).first()
     if not root_word:
@@ -443,7 +553,13 @@ def learn_word(request, word):
             return redirect('learn')
         else:
             return redirect('learn_word', word=child_word.root.word_text)
+    word_id = root_word.id
     
+    can_learn = False
+    if request.user.is_authenticated:
+        if not UserWord.objects.filter(user=request.user, word=root_word).exists():
+            can_learn = True
+
     definition = Definition.objects.get(user=None, word=root_word)
     if not definition.definition_text:
         add_definitions([root_word.id], root_word.lang.abb)
@@ -470,8 +586,10 @@ def learn_word(request, word):
 
     words = WordInstance.objects.filter(video__id=video_id, word__in=related_words)
 
-    return render(request, 'learn_word.html', {'word': word, 
+    return render(request, 'learn_word.html', {'word': word,
+                                               'id': word_id,
                                                'definition': definition,
+                                               'can_learn': can_learn,
                                                'words': words,
                                                'video_data': video_data,
                                                'conjugation_table': conjugation_table[0],

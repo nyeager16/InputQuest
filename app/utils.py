@@ -1,10 +1,12 @@
-from .models import Language, Word, WordInstance, UserWord, UserVideo, Video, UserPreferences, Definition
+from .models import Language, Word, WordInstance, UserWord, UserVideo, Video, UserPreferences, Definition, Question
 from django.db import models
 from django.db.models import Case, When, Count, F
 from django.db.models.functions import Coalesce
+from django.conf import settings
 from .tasks import add_definitions
-from collections import deque
+from collections import deque, defaultdict
 import heapq
+from openai import OpenAI
 
 def setup_user(user):
     videos = Video.objects.all()
@@ -76,7 +78,61 @@ def get_video_data(videos, user=None, comprehension_level_min=0, comprehension_l
         })
     return video_data
 
-def get_CI_video_sections(user, percentage, count):
+def group_sentences(sentences, min_duration=30):
+    groups = []
+    current_group = []
+    current_start = None
+    current_end = None
+
+    for sentence in sentences:
+        if not current_group:
+            # Start a new group
+            current_group.append(sentence)
+            current_start = sentence.start
+            current_end = sentence.end
+            continue
+
+        # Check if adding this sentence keeps the group duration under the minimum required
+        if (sentence.end - current_start) >= min_duration:
+            group_text = " ".join(s.text for s in current_group)
+            groups.append({'text': group_text, 'start': current_start, 'end': current_end})
+
+            # Start a new group
+            current_group = [sentence]
+            current_start = sentence.start
+            current_end = sentence.end
+        else:
+            # Add sentence to the current group
+            current_group.append(sentence)
+            current_end = sentence.end
+
+    return groups
+
+
+def generate_question(sentences):
+    question_count = Question.objects.count()
+    if question_count > 500:
+        return "Maximum sitewide questions generated. A higher limit will be added when this feature is out of beta."
+    
+    client = OpenAI(
+        api_key=settings.OPENAI_API_KEY
+    )
+
+    prompt = f"Given the following sentences from a video transcript, generate a listening comprehension question in Polish:\n\nSentences:\n{sentences}\n\nQuestion:"
+    
+    response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model="gpt-4o-mini",
+    )
+
+    return response.choices[0].message.content
+
+def get_CI_video_sections(user, percentage, clip_length, count):
     known_words = set(
         UserWord.objects.filter(user=user).values_list('word', flat=True)
     )
@@ -85,17 +141,13 @@ def get_CI_video_sections(user, percentage, count):
     videos = Video.objects.filter(language=preferences.language).exclude(
         watch_history__user=user
     ).only('id')
-    
     word_instances = WordInstance.objects.filter(video__in=videos).annotate(
         root_word=Coalesce('word__root', 'word')
     ).values_list('video_id', 'root_word', 'start', 'end')
-    
-    video_words_dict = {}
+
+    video_words_dict = defaultdict(list)
     for video_id, root_word, start, end in word_instances:
-        if video_id not in video_words_dict:
-            video_words_dict[video_id] = []
-        video_words_dict[video_id].append((root_word, float(start), float(end)))
-    
+        video_words_dict[video_id].append((root_word, start, end))
     sections = []
     
     # Process each video's word instances using a sliding window
@@ -115,13 +167,15 @@ def get_CI_video_sections(user, percentage, count):
                 total_count -= 1
                 if old_word in known_words:
                     known_count -= 1
-
+            
             # Valid section found
             if queue:
                 start_time = queue[0][1]
                 end_time = queue[-1][2]
                 duration = end_time - start_time
-                sections.append((video_id, start_time, end_time, duration))
+                
+                if duration <= clip_length:  # Enforce clip length constraint
+                    sections.append((video_id, start_time, end_time, duration))
     
     # Get top `count` longest sections
     top_sections = heapq.nlargest(count, sections, key=lambda x: x[3])
@@ -137,6 +191,7 @@ def get_CI_video_sections(user, percentage, count):
                 break
     
     return result
+
 
 def adj_table(table_dict, table_index, word, split_word):
     if split_word[1] == 'pl':

@@ -24,14 +24,8 @@
                 <button class="rating-btn" data-rating="1">Correct (2)</button>
             </div>
             <div class="button-container">
-                <button id="editFlashcardBtn" class="delete-btn" style="display: none;">Edit</button>
-                <button id="saveChangesBtn" class="delete-btn" style="display: none;">Save Changes</button>
-                {% if words_data %}
-                    <form method="POST" action="{% url 'change_review' words_data.0.id 'false' %}" id="deleteFlashcardForm">
-                        {% csrf_token %}
-                        <button id="deleteFlashcardBtn" class="delete-btn">Delete</button>
-                    </form>
-                {% endif %}
+                <button id="editFlashcardBtn" class="edit-btn" style="display: none;">Edit</button>
+                <button id="saveChangesBtn" class="edit-btn" style="display: none;">Save Changes</button>
             </div>
         </div>
     </div>

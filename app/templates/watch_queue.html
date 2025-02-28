@@ -22,6 +22,20 @@
                     frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
             </iframe>
             <div id="video-id" data-video-id="{{ video.id }}" style="display: none;"></div>
+            <div id="start" data-start="{{ video.start }}" style="display: none;"></div>
+            <div id="end" data-end="{{ video.end }}" style="display: none;"></div>
+            <h1 class="video-title">{{ video.title|title }}</h1>
+            <p class="timestamps">Start: {{ clip_start }} | End: {{ clip_end }}</p>
+            <hr class="section-divider">
+            <div class="new-words">
+                <h2>New Words</h2>
+                {% for word in new_words %}
+                    <a href="{% url 'learn_word' word.root_word %}" target="_blank">
+                        <span class="word" data-word="{{ word.root_word }}" data-word-id="{{ word.root_word_id }}">{{ word.root_word }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+            <hr class="section-divider">
         </div>
         <div class="action-buttons">
             <button id="generate-questions">Generate Questions</button>

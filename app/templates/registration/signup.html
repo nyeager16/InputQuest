@@ -31,12 +31,12 @@
         input[type="text"],
         input[type="email"],
         input[type="password"] {
-            width: calc(100% - 20px);  /* Adjust width to account for padding */
-            padding: 10px;              /* Keep consistent padding */
-            margin: 10px auto;          /* Center the input fields */
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px auto;
             border: 1px solid #ccc;
             border-radius: 4px;
-            display: block;             /* Ensure block display for centering */
+            display: block;
         }
         button {
             width: 100%;
@@ -61,6 +61,9 @@
 <body>
     <div class="container">
         <h1>Sign Up</h1>
+        {% if max_users %}
+            <h2>Max amount of new users reached for current trial period</h2>
+        {% endif %}
         <form method="post">
             {% csrf_token %}
             {{ form.non_field_errors }}

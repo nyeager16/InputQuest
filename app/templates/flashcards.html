@@ -33,8 +33,10 @@
                 <div class="button-container">
                     <button type="submit" id="saveButton">Save Changes</button>
                 </div>
+                <div class="button-container">
+                    <a id="learn-button" href="#" class="action-button">Learn</a>
+                </div>
             </form>
-
             <div id="conjugationTableContainer" style="display: none;">
                 <div class="table-wrapper">
                     <table id="conjugation-table">
@@ -59,6 +61,9 @@
             </div>
         </div>
     </div>
+    <script>
+        var learnWordUrlTemplate = "{% url 'learn_word' 'root_word' %}";
+    </script>
     <script src="{% static 'app/js/flashcards.js' %}"></script>
 </body>
 </html>

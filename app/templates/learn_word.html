@@ -26,6 +26,12 @@
                         </tr>
                     </tbody>
                 </table>
+                {% if can_learn %}
+                    <form method="POST" action="{% url 'add_vocab' id %}">
+                        {% csrf_token %}
+                        <button class="vocab-button" type="submit">Add to My Vocab</button>
+                    </form>
+                {% endif %}
                 <div class="video-container">
                     <iframe id="player"
                         src="https://www.youtube.com/embed/{{ video_data.url }}?enablejsapi=1"
@@ -44,12 +50,12 @@
                         <table id="conjugation-table">
                             <thead>
                                 <tr>
-                                    <th colspan="3" style="background-color: #406678; text-align: center;">Present</th>
+                                    <th colspan="3">Present</th>
                                 </tr>
                                 <tr>
                                     <th></th>
-                                    <th style="background-color: #c0cacf;">Singular</th>
-                                    <th style="background-color: #727678;">Plural</th>
+                                    <th>Singular</th>
+                                    <th>Plural</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -73,15 +79,15 @@
                         <table id="past-conjugation-table">
                             <thead>
                                 <tr>
-                                    <th colspan="6" style="background-color: #406678; text-align: center;">Past</th>
+                                    <th colspan="6" style="text-align: center;">Past</th>
                                 </tr>
                                 <tr>
                                     <th></th>
-                                    <th style="background-color: #c0cacf;">m.</th>
-                                    <th style="background-color: #c0cacf;">f.</th>
-                                    <th style="background-color: #c0cacf;">n.</th>
-                                    <th style="background-color: #727678;">m. pl.</th>
-                                    <th style="background-color: #727678;">other pl.</th>
+                                    <th>m.</th>
+                                    <th>f.</th>
+                                    <th>n.</th>
+                                    <th>m. pl.</th>
+                                    <th>other pl.</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -167,11 +173,11 @@
                             <thead>
                                 <tr>
                                     <th></th>
-                                    <th style="background-color: #c0cacf;">m.</th>
-                                    <th style="background-color: #c0cacf;">n.</th>
-                                    <th style="background-color: #c0cacf;">f.</th>
-                                    <th style="background-color: #727678;">m. pl.</th>
-                                    <th style="background-color: #727678;">other pl.</th>
+                                    <th>m.</th>
+                                    <th>n.</th>
+                                    <th>f.</th>
+                                    <th>m. pl.</th>
+                                    <th>other pl.</th>
                                 </tr>
                             </thead>
                             <tbody>

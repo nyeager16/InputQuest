@@ -1,11 +1,22 @@
 from youtube_transcript_api import YouTubeTranscriptApi
 import string
+from math import floor, ceil
 import scrapetube
+import stanza
+from django.core.management.base import BaseCommand
+from app.models import Word, Channel, Video, Sentence, WordInstance, Language, UserVideo, User
 
-from django.utils import timezone
-from django.core.management.base import BaseCommand, CommandError
-from app.models import Word, Channel, Video, WordInstance, Language, UserVideo, User
+# nlp = stanza.Pipeline("pl", processors="tokenize,pos")
 
+# def classify_polish_pos(text):
+#     doc = nlp(text)
+#     pos_tags = []
+    
+#     for sentence in doc.sentences:
+#         for word in sentence.words:
+#             pos_tags.append((word.text, word.upos))
+    
+#     return pos_tags
 
 class Command(BaseCommand):
     help = "Imports data into the Word, Channel, Video, and WordInstance models"
@@ -21,6 +32,7 @@ class Command(BaseCommand):
         language_object = Language.objects.get(abb=language)
 
         videos = []
+        sentences = []
         wordinstances = []
 
         channel_name = channel_url.split("@")[-1]
@@ -30,13 +42,12 @@ class Command(BaseCommand):
             channel_url=channel_url,
             channel_name=channel_name
         )
-
         for video in channel_videos:
+            full_text = ""
+            timestamps = {}
+            curr_index = 0
             videoID = video['videoId']
             title = str(video['title']['runs'][0]['text'])
-            if Video.objects.filter(url=videoID).exists():
-                Video.objects.filter(url=videoID).delete()
-                continue
             try:
                 tr = YouTubeTranscriptApi.get_transcript(videoID, 
                                                          languages=[language])
@@ -57,26 +68,34 @@ class Command(BaseCommand):
                 sec is dict w/:
                 'text', 'start', 'duration'
                 '''
-                start = sec['start']
-                end = round(start+sec['duration'], 2)
+                start = floor(sec['start'])
+                end = ceil(start+sec['duration'])
                 text = sec['text']
+                text = text.replace("[Muzyka]", "").replace("[muzyka]", "")
+                timestamps[curr_index] = [start, end]
+                curr_index += len(text)
+                full_text = full_text + " " + text
                 text = text.translate(str.maketrans('','',string.punctuation)).lower()
-                allwords = text.split()
-                for word in allwords:
+                if text != "":
+                    sentence = Sentence(video=vid, text=text, start=start, end=end)
+                    sentences.append(sentence)
+                all_words = text.split()
+                for word in all_words:
                     if not Word.objects.filter(word_text=word).exists():
                         continue
                     dataword = Word.objects.filter(word_text=word).first()
                     wordinstances.append(WordInstance(word=dataword, 
                                                     video=vid, start=start, end=end))
-
+            # print(classify_polish_pos(full_text))
+            # return
         Video.objects.bulk_create(videos)
+        Sentence.objects.bulk_create(sentences)
         WordInstance.objects.bulk_create(wordinstances)
 
         users = User.objects.all()
         for user in users:
             user_videos_to_create = [UserVideo(user=user,video=video) for video in videos]
             UserVideo.objects.bulk_create(user_videos_to_create)
-
 
 # python manage.py ytimport "https://www.youtube.com/@EasyPolish" "pl"
 # python manage.py ytimport "https://www.youtube.com/@Robert_Maklowicz" "pl"

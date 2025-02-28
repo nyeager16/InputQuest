@@ -13,17 +13,35 @@
     {% block sidebar %}
     {% include 'sidebar.html' %}
     {% endblock %}
-    <div class="container">
-        <h2>Next Most Common Words</h2>
-        <div class="slider-container">
-            <input type="range" min=0 max=1000 value=0 class="slider" id="sliderValue">
-            <p class="count" id="count">0</p>
+    <div class="account-container">
+        <div class="form-group">
+            <label>Email</label>
+            <div class="email-box">{{ email }}</div>
         </div>
-        <button class="button" id="add">Add to Account</button>
+        <div class="form-group">
+            <div class="radio-group">
+                <input type="radio" id="option1" name="options" value="fsrs"
+                    {% if fsrs %}checked{% endif %}>
+                <label for="option1">FSRS</label>
+                <input type="radio" id="option2" name="options" value="nn"
+                    {% if not fsrs %}checked{% endif %}>
+                <label for="option2">Neural Network</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="notifications">
+                <label for="notifications">Enable Notifications</label>
+            </div>
+        </div>
+        <div class="form-group retention-group">
+            <label for="retention-rate">Retention Rate (Default 90%)</label>
+            <input type="number" id="retention-rate" min="70" max="99" value="{{ retention_rate }}">
+        </div>        
+        <button class="save-btn" id="save-btn">Save Changes</button>
+        <button class="redirect-btn" id="redirect-btn-vocab">Manage Vocab</button>
+        <button class="redirect-btn" id="redirect-btn-history">Watch Queue History</button>
     </div>
-    <script>
-        var commonWords = "{% url 'add_common_words' %}";
-    </script>
     <script src="{% static 'app/js/account.js' %}"></script>
 </body>
 </html>
