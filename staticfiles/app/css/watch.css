@@ -72,7 +72,8 @@ h2 {
 
 .button {
     margin-top: 20px;
-    background-color: #3498db;
+    width: 100%;
+    background-color: #007bff;
     color: white;
     padding: 12px 20px;
     border-radius: 5px;
@@ -83,5 +84,5 @@ h2 {
 }
 
 .button:hover {
-    background-color: #2980b9;
+    background-color: #0056b3;
 }

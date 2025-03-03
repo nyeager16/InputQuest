@@ -23,8 +23,10 @@ document.getElementById("generate-questions").addEventListener("click", function
     let questionsForm = document.getElementById("questions-form");
 
     let videoId = document.getElementById("video-id").getAttribute("data-video-id");
+    let start = document.getElementById("start").getAttribute("data-start");
+    let end = document.getElementById("end").getAttribute("data-end");
 
-    fetch(`/generate_questions/${videoId}/`, {
+    fetch(`/generate_questions/${videoId}/${start}/${end}/`, {
         method: 'GET',
         headers: {
             'X-CSRFToken': csrftoken,
@@ -41,11 +43,11 @@ document.getElementById("generate-questions").addEventListener("click", function
         // Dynamically create the question inputs
         data.questions.forEach((q, index) => {
             let questionHtml = `<p>${index + 1}. ${q}</p>`;
-            questionHtml += `<input type='text' name='answer_${index}' class='question-input' required>`;
+            questionHtml += `<textarea name='answer_${index}' class='question-input' rows='2' required></textarea>`;
             questionsForm.innerHTML += questionHtml;
         });
 
-        container.innerHTML = html;
+        container.appendChild(questionsForm);
     })
     .catch(error => console.error("Error fetching questions:", error));
 });

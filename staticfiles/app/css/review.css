@@ -58,9 +58,10 @@ textarea {
     background-color: #0056b3;
 }
 
-.delete-btn {
+.edit-btn {
     background-color: #007bff;
     color: white;
+    width: 200px;
     padding: 10px 20px;
     font-size: 16px;
     border: none;
@@ -70,8 +71,8 @@ textarea {
     transition: background-color 0.3s;
 }
 
-.delete-btn:hover {
-    background-color: #444;
+.edit-btn:hover {
+    background-color: #0056b3;
 }
 
 .edit-flashcard-link {
@@ -79,12 +80,11 @@ textarea {
 }
 
 .button-container {
-    position: absolute;
-    bottom: 100px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    align-items: center;
     width: 50%;
-    margin-top: auto;
+    margin-top: 20px;
     padding: 10px 0;
 }
 

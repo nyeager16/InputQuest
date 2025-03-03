@@ -447,7 +447,7 @@ def update_definition(request, word_id):
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 def signup(request):
-    max_user_count = 50
+    max_user_count = 100
     if request.method == 'POST':
         if User.objects.count() > max_user_count:
             return redirect('signup')
@@ -489,6 +489,19 @@ def save_account_settings(request):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@login_required(login_url="/login/")
+def watch_history(request):
+    history = WatchHistory.objects.filter(user=request.user).order_by('-watched_at')
+    return render(request, 'watch_history.html', {'history': history})
+
+@login_required
+def delete_watch_history(request, history_id):
+    if request.method == "POST":
+        history_item = get_object_or_404(WatchHistory, id=history_id, user=request.user)
+        history_item.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)
 
 @login_required(login_url="/login/")
 def vocab(request):

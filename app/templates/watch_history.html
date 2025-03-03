@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About</title>
+    <link rel="stylesheet" href="{% static 'app/css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'app/css/watch_history.css' %}">
+    <link rel="icon" href="{% static 'app/images/favicon.ico' %}" type="image/x-icon">
+</head>
+<body>
+    {% block sidebar %}
+    {% include 'sidebar.html' %}
+    {% endblock %}
+    <div class="container">
+        <h2>Watch History</h2>
+        <div id="watch-history">
+            {% for item in history %}
+            <div class="history-item">
+                <span class="title">{{ item.video.title }}</span>
+                <button class="delete-btn" data-id="{{ item.id }}">Delete</button>
+            </div>
+            {% empty %}
+            <p>No watch history available.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <script src="{% static 'app/js/watch_history.js' %}"></script>
+</body>

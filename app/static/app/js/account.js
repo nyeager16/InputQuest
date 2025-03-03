@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("save-btn").addEventListener("click", saveChanges);
     document.getElementById('redirect-btn-vocab').addEventListener('click', function() {
-        window.location.href = 'your-redirect-url';
+        window.location.href = 'flashcards';
     });
     document.getElementById('redirect-btn-history').addEventListener('click', function() {
-        window.location.href = 'your-redirect-url';
+        window.location.href = 'watch-history/';
     });
 });
 

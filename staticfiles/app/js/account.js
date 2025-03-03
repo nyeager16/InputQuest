@@ -1,52 +1,49 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const slider = document.getElementById("sliderValue");
-    const count = document.getElementById("count");
-    const addButton = document.getElementById("add");
+    document.getElementById("save-btn").addEventListener("click", saveChanges);
+    document.getElementById('redirect-btn-vocab').addEventListener('click', function() {
+        window.location.href = 'flashcards';
+    });
+    document.getElementById('redirect-btn-history').addEventListener('click', function() {
+        window.location.href = 'watch-history/';
+    });
+});
 
-    // from: https://docs.djangoproject.com/en/5.1/howto/csrf/
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+// from: https://docs.djangoproject.com/en/5.1/howto/csrf/
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-        return cookieValue;
     }
-    const csrftoken = getCookie('csrftoken');
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
 
-    slider.oninput = function() {
-        count.textContent = `${slider.value}`;
-    };
+function saveChanges() {
+    const notifications = document.getElementById("notifications").checked;
+    const retentionRate = document.getElementById("retention-rate").value;
+    
+    const selectedOption = document.querySelector('input[name="options"]:checked').value;
+    const fsrs = selectedOption && selectedOption.value === 'option1';
 
-    addButton.onclick = function() {
-        const wordCount = slider.value;
-
-        fetch(commonWords, {
-            method: 'POST',
-            headers: {
+    fetch('/save-account-settings/', {
+        method: 'POST',
+        headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-            },
-            body: JSON.stringify({ 'word_count': wordCount })
+            'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify({
+            notifications: notifications,
+            fsrs: selectedOption,
+            retention_rate: retentionRate
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                window.location.href = '/account';
-            } else {
-            alert('Error adding words');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to add words');
-        });
-    };
-});
+    }).then(response => response.json())
+        .catch(error => console.error('Error:', error));
+}

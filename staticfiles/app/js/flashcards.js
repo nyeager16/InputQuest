@@ -31,8 +31,11 @@ flashcardItems.forEach(item => {
         this.classList.add('active');
         // Update the textarea with the clicked word's text
         document.getElementById('wordId').value = this.dataset.id;
-        console.log(this.dataset.definition);
         document.getElementById('definitionText').value = this.dataset.definition;
+
+        let rootWord = this.querySelector('.word-column').textContent;
+        const learnUrl = learnWordUrlTemplate.replace("root_word", rootWord);
+        document.getElementById('learn-button').setAttribute('href', learnUrl);
 
         // Get the ID of the selected word
         const wordId = this.dataset.id;
@@ -64,12 +67,18 @@ flashcardItems.forEach(item => {
                     if (tableType === 0) {
                         tableHead.innerHTML = `
                             <tr>
+                                <th colspan="3" style="text-align: center;">Present</th>
+                            </tr>
+                            <tr>
                                 <th></th>
                                 <th>Singular</th>
                                 <th>Plural</th>
                             </tr>
                         `;
                         pastTableHead.innerHTML = `
+                            <tr>
+                                <th colspan="6" style="text-align: center;">Past</th>
+                            </tr>
                             <tr>
                                 <th></th>
                                 <th>m.</th>
@@ -235,7 +244,7 @@ flashcardItems.forEach(item => {
                             const cellId = this.id;
                             const wordId = this.dataset.wordId; 
         
-                            if (!wordId || wordId === "-1" || tableType === 1) {
+                            if (!wordId || wordId === "-1" || tableType === 1 || tableType === 2) {
                                 return;
                             }
         

@@ -5,4 +5,5 @@ __pycache__/
 .vscode/
 app/migrations/*
 data/*
+app/nn_srs/data/*
 TODO.md

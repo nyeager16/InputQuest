@@ -1,6 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const slider = document.getElementById("comprehensibleInput");
+    const compSlider = document.getElementById("comprehensibleInput");
     const percentageDisplay = document.getElementById("percentage");
+
+    const clipSlider = document.getElementById("clipLength");
+    const secondsDisplay = document.getElementById("seconds");
+
     const goToQueueButton = document.getElementById("goToQueue");
 
     // from: https://docs.djangoproject.com/en/5.1/howto/csrf/
@@ -21,28 +25,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const csrftoken = getCookie('csrftoken');
 
-    // Button action (e.g., redirect or trigger an action)
-    slider.oninput = function() {
-        percentageDisplay.textContent = `${slider.value}%`;
+    compSlider.oninput = function() {
+        percentageDisplay.textContent = `${compSlider.value}%`;
+    };
+    clipSlider.oninput = function() {
+        secondsDisplay.textContent = `${clipSlider.value}`;
     };
 
     // Handle "Go to Queue" button click
     goToQueueButton.onclick = function() {
-        const selectedPercentage = slider.value;
+        const selectedPercentage = compSlider.value;
+        const selectedClipLength = clipSlider.value;
 
         // Send the updated percentage to the backend using fetch
         fetch(updateQueueUrl, {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken  // Include CSRF token for POST requests in Django
+            'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ 'percentage': selectedPercentage })
+            body: JSON.stringify({ 'percentage': selectedPercentage, 'clip_length': selectedClipLength })
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Redirect to the queue page after the update
                 window.location.href = '/watch/queue';  // Redirect to the queue page
             } else {
             alert('Error updating preference');

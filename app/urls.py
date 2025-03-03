@@ -33,6 +33,8 @@ urlpatterns = [
 
     path('account/flashcards', views.flashcards, name='flashcards'),
     path('account/vocab', views.vocab, name='vocab'),
+    path('account/watch-history/', views.watch_history, name='watch_history'),
+    path('delete-watch-history/<int:history_id>/', views.delete_watch_history, name='delete_watch_history'),
 
     path('get-conjugation-table/<int:word_id>/', views.get_conjugation_table_view, name='get_conjugation_table'),
     path('save-selected-word/', views.save_selected_word, name='save_selected_word'),
