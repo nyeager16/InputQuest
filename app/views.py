@@ -546,27 +546,6 @@ def add_common_words(request):
     return JsonResponse({'status': 'error'})
 
 def about(request):
-    input_size = 6  # Number of input features
-    hidden_size = 64
-    num_layers = 2
-
-    model = ReviewLSTM(input_size, hidden_size, num_layers)
-    model_path = os.path.join(os.path.dirname(__file__), "nn_srs", "review_lstm.pth")
-    model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
-    model.eval()  # Set to evaluation mode
-
-    example_data = [
-        [10, 5, 432000, 0.3, 2, 2]
-    ]
-
-    features = torch.tensor([example_data], dtype=torch.float32)
-
-    with torch.no_grad():
-        predicted_days = model(features).item()
-
-    optimal_review_days = get_optimal_review_time(predicted_days, retention_threshold=0.9)
-
-    print(optimal_review_days)
 
     return render(request, 'about.html')
 
