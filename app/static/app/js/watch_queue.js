@@ -40,14 +40,52 @@ document.getElementById("generate-questions").addEventListener("click", function
 
         questionsForm.innerHTML = '';
 
-        // Dynamically create the question inputs
+        // Create the question inputs
         data.questions.forEach((q, index) => {
+            let questionWrapper = document.createElement("div");
+            questionWrapper.classList.add("question-wrapper");
+
             let questionHtml = `<p>${index + 1}. ${q}</p>`;
             questionHtml += `<textarea name='answer_${index}' class='question-input' rows='2' required></textarea>`;
-            questionsForm.innerHTML += questionHtml;
+            questionHtml += `<p class="answer-feedback" id="feedback_${index}" style="color: green; display: none;"></p>`;
+
+            questionWrapper.innerHTML = questionHtml;
+            questionsForm.appendChild(questionWrapper);
         });
 
         container.appendChild(questionsForm);
     })
     .catch(error => console.error("Error fetching questions:", error));
+});
+
+document.querySelector("#submit-answers-container form").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    let videoId = document.getElementById("video-id").getAttribute("data-video-id");
+    let start = document.getElementById("start").getAttribute("data-start");
+    let end = document.getElementById("end").getAttribute("data-end");
+    let answers = {}
+
+    document.querySelectorAll(".question-input").forEach((input) => {
+        let questionText = input.previousElementSibling.textContent.trim();
+        console.log("Question:", questionText);
+        answers[questionText] = input.value;
+    });
+
+    fetch(`/submit_answers/${videoId}/${start}/${end}/`, {
+        method: "POST",
+        body: JSON.stringify(answers),
+        headers: {
+            'X-CSRFToken': csrftoken,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        data.feedback.forEach((feedback, index) => {
+            let feedbackElement = document.getElementById(`feedback_${index}`);
+            feedbackElement.textContent = feedback;
+            feedbackElement.style.display = "block";
+        });
+    })
+    .catch(error => console.error("Error submitting answers:", error));
 });

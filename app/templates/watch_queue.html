@@ -46,7 +46,6 @@
                 <form method="post" action="">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="submit_answers">
-                    <input type="hidden" name="video_id" value="{{ video.id }}">
                     <div id="questions-form"></div>
                     <button type="submit">Submit Answers</button>
                 </form>

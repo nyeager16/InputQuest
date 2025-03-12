@@ -111,4 +111,7 @@ class Review(models.Model):
     correct = models.BooleanField()
     familiarity_score_before = models.FloatField()
     familiarity_score_after = models.FloatField()
+    duration = models.IntegerField(default=5000)
+    elapsed_days = models.IntegerField(default=0)
+    elapsed_seconds = models.IntegerField(default=0)
 

@@ -2,6 +2,8 @@ from collections import defaultdict
 from random import sample
 from fsrs import Scheduler, Rating
 import json
+import os
+import torch
 from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -9,10 +11,19 @@ from django.http import JsonResponse
 from django.utils.timezone import now
 from django.db import models
 from django.db.models import Case, When, Count, F, Q, Prefetch
-from .models import Video, Sentence, Channel, WatchHistory, WordInstance, Word, UserWord, UserVideo, UserPreferences, Language, Definition, Question, User
+from .nn_srs.models.review_lstm import ReviewLSTM
+from .models import (
+    Video, Sentence, Channel, WatchHistory, WordInstance, Word, UserWord, 
+    UserPreferences, Definition, Question, User, Review
+)
 from .forms import SignUpForm
 from .tasks import calculate_video_CI, add_definitions
-from .utils import setup_user, get_video_data, get_CI_video_sections, add_words, get_common_words, get_conjugation_table, remove_words, generate_question, group_sentences
+from .utils import (
+    setup_user, get_video_data, get_CI_video_sections, add_words, 
+    get_common_words, get_conjugation_table, remove_words, 
+    generate_question, generate_feedback, group_sentences, 
+    get_optimal_review_time
+)
 
 def all_videos(request):
     # Check if the user is authenticated
@@ -324,8 +335,18 @@ def generate_questions(request, video_id, start, end):
     clip_questions += question_texts
     clip_questions = sample(clip_questions, min(question_count, len(clip_questions)))
 
-
     return JsonResponse({"questions": clip_questions})
+
+def submit_answers(request, video_id, start, end):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        sentences = Sentence.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
+        total_text = " ".join(sentences.values_list('text', flat=True))
+
+        feedback = generate_feedback(data, total_text)
+        return JsonResponse({"feedback": feedback})
+    return JsonResponse({"error": "Invalid request"}, status=400)
 
 @login_required(login_url="/login/")
 def update_comprehension_filter(request):
@@ -394,7 +415,7 @@ def submit_review(request, word_id, rating):
             fsrs_rating = Rating.Good
         """
         Handles the submission of the user's review for a word.
-        Rating is passed in (from 0 to 4) and used to update the review schedule.
+        Rating is passed in (from 0 to 1) and used to update the review schedule.
         """
         user = request.user
         user_preferences = UserPreferences.objects.filter(user=user).first()
@@ -404,7 +425,6 @@ def submit_review(request, word_id, rating):
         scheduler = Scheduler(desired_retention=desired_retention)
         card = user_word.load_card()
         card, _ = scheduler.review_card(card, fsrs_rating)
-        
         user_word.save_card(card)
 
         return JsonResponse({'status': 'success'})
@@ -526,6 +546,27 @@ def add_common_words(request):
     return JsonResponse({'status': 'error'})
 
 def about(request):
+    input_size = 6  # Number of input features
+    hidden_size = 64
+    num_layers = 2
+
+    model = ReviewLSTM(input_size, hidden_size, num_layers)
+    model_path = os.path.join(os.path.dirname(__file__), "nn_srs", "review_lstm.pth")
+    model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
+    model.eval()  # Set to evaluation mode
+
+    example_data = [
+        [10, 5, 432000, 0.3, 2, 2]
+    ]
+
+    features = torch.tensor([example_data], dtype=torch.float32)
+
+    with torch.no_grad():
+        predicted_days = model(features).item()
+
+    optimal_review_days = get_optimal_review_time(predicted_days, retention_threshold=0.9)
+
+    print(optimal_review_days)
 
     return render(request, 'about.html')
 

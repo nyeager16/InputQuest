@@ -1,4 +1,7 @@
-from .models import Language, Word, WordInstance, UserWord, UserVideo, Video, UserPreferences, Definition, Question
+from .models import (
+    Language, Word, WordInstance, UserWord, UserVideo, Video, 
+    UserPreferences, Definition, Question, Sentence
+)
 from django.db import models
 from django.db.models import Case, When, Count, F
 from django.db.models.functions import Coalesce
@@ -7,6 +10,9 @@ from .tasks import add_definitions
 from collections import deque, defaultdict
 import heapq
 from openai import OpenAI
+import torch
+import torch.nn as nn
+import pandas as pd
 
 def setup_user(user):
     videos = Video.objects.all()
@@ -131,6 +137,42 @@ def generate_question(sentences):
     )
 
     return response.choices[0].message.content
+
+def generate_feedback(questions, total_text):
+    total_feedback = []
+
+    client = OpenAI(
+            api_key=settings.OPENAI_API_KEY
+        )
+
+    for question, answer in questions.items():
+        prompt = f"""
+            Given the following text:
+            
+            \"\"\"{total_text}\"\"\"
+            
+            Provide feedback to the user's answer in English in 1-3 sentences, providing a sample answer in Polish if needed.
+            
+            **Question:** {question}
+            **User's Answer:** {answer}
+            """
+        response = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model="gpt-4o-mini",
+        )
+        feedback = response.choices[0].message.content
+        total_feedback.append(feedback)
+    
+    return total_feedback
+
+def get_optimal_review_time(predicted_days, retention_threshold=0.9):
+    adjusted_days = max(1, predicted_days * (1.0 / retention_threshold))
+    return adjusted_days
 
 def get_CI_video_sections(user, percentage, clip_length, count):
     known_words = set(

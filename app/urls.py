@@ -18,6 +18,7 @@ urlpatterns = [
     path('watch/queue/', views.watch_queue, name='watch_queue'),
     path('update_queue_ci/', views.update_queue_ci, name='update_queue_ci'),
     path('generate_questions/<int:video_id>/<int:start>/<int:end>/', views.generate_questions, name='generate_questions'),
+    path('submit_answers/<int:video_id>/<int:start>/<int:end>/', views.submit_answers, name='submit_answers'),
 
     path('learn/', views.learn, name='learn'),
     path('learn/<str:word>/', views.learn_word, name='learn_word'),
