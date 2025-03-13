@@ -45,9 +45,12 @@ document.getElementById("generate-questions").addEventListener("click", function
             let questionWrapper = document.createElement("div");
             questionWrapper.classList.add("question-wrapper");
 
-            let questionHtml = `<p>${index + 1}. ${q}</p>`;
-            questionHtml += `<textarea name='answer_${index}' class='question-input' rows='2' required></textarea>`;
-            questionHtml += `<p class="answer-feedback" id="feedback_${index}" style="color: green; display: none;"></p>`;
+            let questionHtml = `
+                <p>${index + 1}. ${q.text}</p>
+                <input type="hidden" name="question_id" value="${q.id}">
+                <textarea name="answer_${index}" class="question-input" rows="2" required></textarea>
+                <p class="answer-feedback" id="feedback_${q.id}" style="color: green; display: none;"></p>
+            `;
 
             questionWrapper.innerHTML = questionHtml;
             questionsForm.appendChild(questionWrapper);
@@ -66,10 +69,10 @@ document.querySelector("#submit-answers-container form").addEventListener("submi
     let end = document.getElementById("end").getAttribute("data-end");
     let answers = {}
 
-    document.querySelectorAll(".question-input").forEach((input) => {
-        let questionText = input.previousElementSibling.textContent.trim();
-        console.log("Question:", questionText);
-        answers[questionText] = input.value;
+    document.querySelectorAll(".question-wrapper").forEach((wrapper) => {
+        let questionId = wrapper.querySelector("input[name='question_id']").value;
+        let answer = wrapper.querySelector(".question-input").value;
+        answers[questionId] = answer;
     });
 
     fetch(`/submit_answers/${videoId}/${start}/${end}/`, {
@@ -81,10 +84,12 @@ document.querySelector("#submit-answers-container form").addEventListener("submi
     })
     .then(response => response.json())
     .then(data => {
-        data.feedback.forEach((feedback, index) => {
-            let feedbackElement = document.getElementById(`feedback_${index}`);
-            feedbackElement.textContent = feedback;
-            feedbackElement.style.display = "block";
+        Object.keys(data.feedback).forEach(questionId => {
+            let feedbackElement = document.getElementById(`feedback_${questionId}`);
+            if (feedbackElement) {
+                feedbackElement.textContent = data.feedback[questionId];
+                feedbackElement.style.display = "block";
+            }
         });
     })
     .catch(error => console.error("Error submitting answers:", error));

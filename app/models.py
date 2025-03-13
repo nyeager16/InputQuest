@@ -38,12 +38,22 @@ class Sentence(models.Model):
     end = models.IntegerField(default=0, db_index=True)
     def __str__(self):
         return self.text
-    
+
 class Question(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
-    text = models.CharField(max_length=150, default="")
+    text = models.CharField(max_length=300, default="")
     start = models.IntegerField(default=0, db_index=True)
     end = models.IntegerField(default=0, db_index=True)
+
+class Answer(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    text = models.TextField()
+
+class Feedback(models.Model):
+    answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    text = models.TextField()
 
 class UserVideo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

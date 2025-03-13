@@ -1,6 +1,6 @@
 from .models import (
     Language, Word, WordInstance, UserWord, UserVideo, Video, 
-    UserPreferences, Definition, Question, Sentence
+    UserPreferences, Definition, Question, Sentence, Answer, Feedback
 )
 from django.db import models
 from django.db.models import Case, When, Count, F
@@ -118,7 +118,7 @@ def group_sentences(sentences, min_duration=30):
 def generate_question(sentences):
     question_count = Question.objects.count()
     if question_count > 500:
-        return "Maximum sitewide questions generated. A higher limit will be added when this feature is out of beta."
+        return "Maximum sitewide questions reached. The limit will increase once this feature exits beta."
     
     client = OpenAI(
         api_key=settings.OPENAI_API_KEY
@@ -138,14 +138,20 @@ def generate_question(sentences):
 
     return response.choices[0].message.content
 
-def generate_feedback(questions, total_text):
-    total_feedback = []
+def generate_feedback(data, total_text, user):
+    if Feedback.objects.count() >= 200:
+        return {str(question_id): "Maximum sitewide feedback reached. The limit will increase once this feature exits beta." for question_id in data.keys()}
+    feedback_dict = {}
+    feedback_objects = []
 
     client = OpenAI(
             api_key=settings.OPENAI_API_KEY
         )
 
-    for question, answer in questions.items():
+    answers = Answer.objects.filter(question_id__in=data.keys(), user=user).select_related("question")
+    for answer in answers:
+        question = answer.question
+
         prompt = f"""
             Given the following text:
             
@@ -153,8 +159,8 @@ def generate_feedback(questions, total_text):
             
             Provide feedback to the user's answer in English in 1-3 sentences, providing a sample answer in Polish if needed.
             
-            **Question:** {question}
-            **User's Answer:** {answer}
+            **Question:** {question.text}
+            **User's Answer:** {answer.text}
             """
         response = client.chat.completions.create(
             messages=[
@@ -165,10 +171,14 @@ def generate_feedback(questions, total_text):
             ],
             model="gpt-4o-mini",
         )
-        feedback = response.choices[0].message.content
-        total_feedback.append(feedback)
+        feedback_text = response.choices[0].message.content
+        feedback_dict[str(question.id)] = feedback_text
+
+        feedback_objects.append(Feedback(answer=answer, user=user, text=feedback_text))
+    if feedback_objects:
+        Feedback.objects.bulk_create(feedback_objects)
     
-    return total_feedback
+    return feedback_dict
 
 def get_optimal_review_time(predicted_days, retention_threshold=0.9):
     adjusted_days = max(1, predicted_days * (1.0 / retention_threshold))

@@ -14,7 +14,7 @@ from django.db.models import Case, When, Count, F, Q, Prefetch
 from .nn_srs.models.review_lstm import ReviewLSTM
 from .models import (
     Video, Sentence, Channel, WatchHistory, WordInstance, Word, UserWord, 
-    UserPreferences, Definition, Question, User, Review
+    UserPreferences, Definition, Question, User, Review, Answer
 )
 from .forms import SignUpForm
 from .tasks import calculate_video_CI, add_definitions
@@ -305,8 +305,8 @@ def generate_questions(request, video_id, start, end):
     question_count = min(length//min_duration, 10)
 
     existing_questions = Question.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
-    existing_questions_times = list(existing_questions.values_list('start', 'end'))
-    clip_questions = [question.text for question in existing_questions]
+    existing_questions_list = list(existing_questions.values('id', 'text', 'start', 'end'))
+    existing_questions_times = [(q['start'], q['end']) for q in existing_questions_list]
 
     sentences = Sentence.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
     groups = group_sentences(sentences, min_duration)
@@ -330,21 +330,43 @@ def generate_questions(request, video_id, start, end):
         question_object = Question(video_id=video_id, text=question, 
                                    start=group['start'], end=group['end'])
         question_objects.append(question_object)
-    if question_objects: Question.objects.bulk_create(question_objects)
 
-    clip_questions += question_texts
-    clip_questions = sample(clip_questions, min(question_count, len(clip_questions)))
+    new_questions_list = []
+    if question_objects:
+        created_questions = Question.objects.bulk_create(question_objects)
+        new_questions_list = [{'id': q.id, 'text': q.text} for q in created_questions]
 
-    return JsonResponse({"questions": clip_questions})
+    all_questions = existing_questions_list + new_questions_list
+    sampled_questions = sample(all_questions, min(question_count, len(all_questions)))
+
+    return JsonResponse({"questions": sampled_questions})
 
 def submit_answers(request, video_id, start, end):
     if request.method == "POST":
+        user = request.user
         data = json.loads(request.body)
+
+        existing_answers = {answer.question_id: answer for answer in Answer.objects.filter(question_id__in=data.keys(), user=request.user)}
+
+        answers_to_update = []
+        answers_to_create = []
+
+        for question_id, text in data.items():
+            if question_id in existing_answers:
+                existing_answers[question_id].text = text
+                answers_to_update.append(existing_answers[question_id])
+            else:
+                answers_to_create.append(Answer(question_id=question_id, user=user, text=text))
+
+        if answers_to_update:
+            Answer.objects.bulk_update(answers_to_update, ['text'])
+        if answers_to_create:
+            Answer.objects.bulk_create(answers_to_create)
 
         sentences = Sentence.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
         total_text = " ".join(sentences.values_list('text', flat=True))
 
-        feedback = generate_feedback(data, total_text)
+        feedback = generate_feedback(data, total_text, user)
         return JsonResponse({"feedback": feedback})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
