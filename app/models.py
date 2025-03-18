@@ -86,6 +86,7 @@ class UserPreferences(models.Model):
     fsrs = models.BooleanField(default=True)
     vocab_filter = models.IntegerField(default=0)
     max_clip_length = models.IntegerField(default=300)
+    
 
 class Definition(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)

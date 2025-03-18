@@ -39,6 +39,10 @@
         </div>
         <div class="action-buttons">
             <button id="generate-questions">Generate Questions</button>
+            <div id="loading-indicator" style="display: none; text-align: center; font-size: 18px;">
+                <div class="spinner"></div>
+                <p>Generating questions...</p>
+            </div>
             <div id="questions-container" style="display: none;">
                 <!-- Questions will be injected here -->
             </div>
@@ -49,6 +53,10 @@
                     <div id="questions-form"></div>
                     <button type="submit">Submit</button>
                 </form>
+                <div id="submit-loading-indicator" style="display: none; text-align: center;">
+                    <div class="spinner"></div>
+                    <p>Generating answer feedback...</p>
+                </div>
             </div>
             <form method="post" action="">
                 {% csrf_token %}

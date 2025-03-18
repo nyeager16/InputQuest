@@ -6,6 +6,16 @@ body {
     overflow: hidden;
 }
 
+.container {
+    margin-left: 200px;
+    padding: 20px;
+    position: relative; 
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .content {
     max-width: 600px;
     margin: 0 auto;
@@ -20,18 +30,8 @@ textarea {
     font-size: 16px;
 }
 
-.container {
-    margin-left: 220px;
-    padding: 20px;
-    position: relative; 
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 .word-display {
-    font-size: 36px;
+    font-size: 48px;
     font-weight: bold;
     margin-bottom: 20px;
 }
