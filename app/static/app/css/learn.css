@@ -7,6 +7,53 @@ body, html {
     overflow: hidden;
 }
 
+.search-container {
+    position: fixed;
+    top: 40px;
+    left: 200px;
+    width: calc(100% - 200px);
+    display: flex;
+    justify-content: center;
+    z-index: 1000;
+}
+
+#word-search {
+    width: 400px;
+    padding: 10px;
+    font-size: 18px;
+    border-radius: 5px;
+    border: 2px solid #404040;
+    position: relative;
+}
+
+#search-results {
+    position: absolute;
+    width: 420px;
+    top: 100%;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background-color: #fff;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+#search-results.active {
+    border: 1px solid #ccc;
+}
+
+#search-results li {
+    padding: 10px;
+    cursor: pointer;
+}
+
+#search-results li:hover {
+    background-color: #f0f0f0;
+}
+
 .word-sections {
     margin-left: 200px;
     padding: 20px;
@@ -51,4 +98,8 @@ body, html {
 
 .word-section button.learn-button:hover {
     background-color: #218838;
+}
+
+.no-scroll {
+    overflow: hidden;
 }

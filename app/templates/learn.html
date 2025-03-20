@@ -13,6 +13,10 @@
     {% block sidebar %}
     {% include 'sidebar.html' %}
     {% endblock %}
+    <div class="search-container">
+        <input type="text" id="word-search" placeholder="Search...">
+        <ul id="search-results"></ul>
+    </div>
     <div class="word-sections">
         {% if new_words %}
             {% for word in new_words %}

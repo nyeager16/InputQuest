@@ -571,6 +571,22 @@ def about(request):
 
     return render(request, 'about.html')
 
+def search_word(request):
+    query = request.GET.get('q', '')
+    if query:
+        words = (
+            Word.objects
+            .filter(word_text__istartswith=query)
+            .annotate(instance_count=Count('wordinstance'))
+            .order_by('-instance_count', 'word_text')
+            .values_list('word_text', flat=True)
+        )
+        
+        distinct_words = list(dict.fromkeys(words))
+        return JsonResponse(distinct_words[:20], safe=False)
+
+    return JsonResponse([], safe=False)
+
 @login_required(login_url="/login/")
 def learn(request):
     if request.method == "POST":
