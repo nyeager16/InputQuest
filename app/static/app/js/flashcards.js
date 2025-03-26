@@ -1,6 +1,3 @@
-// Get all flashcard items
-const flashcardItems = document.querySelectorAll('.flashcard-item');
-
 // from: https://docs.djangoproject.com/en/5.1/howto/csrf/
 function getCookie(name) {
     let cookieValue = null;
@@ -19,6 +16,7 @@ function getCookie(name) {
 }
 const csrftoken = getCookie('csrftoken');
 
+const flashcardItems = document.querySelectorAll('.flashcard-item');
 // Add click event listeners to each flashcard item
 flashcardItems.forEach(item => {
     item.addEventListener('click', function() {
@@ -290,10 +288,8 @@ flashcardItems.forEach(item => {
     });
 });
 
-
 document.getElementById('saveButton').addEventListener('click', function (event) {
     event.preventDefault(); // Prevent form submission
-    console.log('Save Changes clicked');
     const wordId = document.getElementById('wordId').value; // Word ID
     const newDefinition = document.getElementById('definitionText').value; // Updated definition
 
@@ -336,8 +332,6 @@ document.getElementById('saveButton').addEventListener('click', function (event)
 });
 
 document.getElementById('filterButton').addEventListener('click', function () {
-    console.log('Filter button clicked');
-
     fetch('/account/flashcards', {
         method: 'POST',
         headers: {
@@ -347,7 +341,6 @@ document.getElementById('filterButton').addEventListener('click', function () {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            console.log('Filter applied, reloading page...');
             location.reload();
         } else {
             alert('Filtering failed. Try again.');
@@ -359,28 +352,224 @@ document.getElementById('filterButton').addEventListener('click', function () {
     });
 });
 
+const overlay = document.getElementById('addFlashcardsOverlay');
+const openButton = document.getElementById('openAddFlashcards');
+const cancelButton = document.getElementById('cancelButton');
+const selectedWordsList = document.getElementById('selectedWordsList');
+const addWordsButton = document.getElementById('addWordsButton');
+
+const searchInput = document.getElementById('word-search');
+const searchResults = document.getElementById('search-results');
+
+const commonVocabSlider = document.getElementById('commonVocabSlider');
+const commonVocabCount = document.getElementById('commonVocabCount');
+const fetchCommonVocabButton = document.getElementById('fetchCommonVocabButton');
+
 document.addEventListener('keydown', function (event) {
     const pressedKey = event.key.toLowerCase();
     if (!/^[a-z]$/.test(pressedKey)) return; // Ensure it's a letter
 
-    const flashcardList = document.getElementById('wordList');
+    if (document.activeElement === searchInput) return;
     const flashcards = document.querySelectorAll('.flashcard-item');
 
-    for (const flashcard of flashcards) {
+    if (flashcards.length < 2) return;
+
+    // Skip filter button
+    for (let i = 1; i < flashcards.length; i++) {
+        const flashcard = flashcards[i];
         const wordText = flashcard.textContent.trim().toLowerCase();
+        
         if (wordText.startsWith(pressedKey)) {
             // Scroll to the selected word
             flashcard.scrollIntoView({ block: 'center' });
 
-            // Remove active class from all items
             flashcards.forEach(item => item.classList.remove('active'));
-
-            // Add active class to the selected item
             flashcard.classList.add('active');
 
-            // Simulate a click event to load the definition
             flashcard.click();
             break;
         }
     }
+});
+
+let debounceTimeout;
+let focusLost = false;
+
+let selectedWords = [];
+
+openButton.addEventListener('click', () => {
+    overlay.classList.remove('hidden');
+    searchInput.focus();
+});
+
+cancelButton.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+    searchInput.value = '';
+    searchResults.innerHTML = '';
+    selectedWordsList.innerHTML = '';
+    selectedWords = [];
+});
+
+searchInput.addEventListener('focus', function() {
+    const query = this.value.trim();
+    if (query.length > 0) {
+        fetchSearch(query);
+    }
+
+    searchResults.classList.add('active');
+    searchInput.classList.add('focused-border');
+    focusLost = false;
+});
+
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    // Clear previous debounce timeout
+    clearTimeout(debounceTimeout);
+
+    if (query.length > 0) {
+        debounceTimeout = setTimeout(() => {
+            if (!focusLost) {
+                fetchSearch(query);
+            }
+        }, 300);
+    } else {
+        searchResults.innerHTML = '';
+        searchResults.style.display = 'none';
+    }
+});
+
+function fetchSearch(query) {
+    fetch(`/search_word_flashcard/?q=${query}`)
+        .then(response => response.json())
+        .then(data => {
+            searchResults.innerHTML = '';
+            if (data.length > 0) {
+                data.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item.word_text;
+                    li.addEventListener('click', function() {
+                        addWord(item);
+                    });
+                    searchResults.appendChild(li);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.innerHTML = '<li>No results found.</li>';
+                searchResults.style.display = 'block';
+            }
+        })
+        .catch(err => console.error("Error fetching data:", err));
+}
+
+function addWord(word) {
+    console.log(word);
+    if (selectedWords.some(w => w.id === word.id)) return; // Avoid duplicate words
+    
+    selectedWords.push(word);
+
+    const flashcard = document.createElement('div');
+    flashcard.classList.add('flashcard-item');
+    flashcard.textContent = word.word_text;
+
+    const removeBtn = document.createElement('span');
+    removeBtn.textContent = '❌';
+    removeBtn.classList.add('remove-word');
+    removeBtn.addEventListener('click', () => {
+        selectedWords = selectedWords.filter(w => w.id !== word.id);
+        flashcard.remove();
+    });
+
+    flashcard.appendChild(removeBtn);
+    selectedWordsList.appendChild(flashcard);
+
+    // Remove word from dropdown
+    const listItems = Array.from(searchResults.children);
+    listItems.forEach(item => {
+        if (item.textContent === word.word_text) {
+            item.remove();
+        }
+    });
+}
+
+searchResults.addEventListener('click', function(event) {
+    const target = event.target;
+
+    // Ensure it's a list item (word) that was clicked
+    if (target.tagName === 'LI') {
+        event.stopPropagation();  // Prevent the document click listener from hiding the dropdown
+    }
+});
+
+let isClickOnOverlay = false;
+
+// Detect if the mousedown event is on the overlay background
+overlay.addEventListener('mousedown', (event) => {
+    if (event.target === overlay && selectedWords.length === 0) {
+        isClickOnOverlay = true; // The click is starting on the overlay background
+    }
+});
+
+document.addEventListener('click', (event) => {
+    // Check if the overlay is visible and if there are no selected words
+    if (!overlay.classList.contains('hidden') && selectedWords.length === 0) {
+        if (isClickOnOverlay && event.target === overlay) {
+            overlay.classList.add('hidden');
+        }
+    }
+    isClickOnOverlay = false;
+});
+
+document.addEventListener('click', (event) => {
+    if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+        searchResults.style.display = 'none';
+    }
+});
+
+addWordsButton.addEventListener('click', () => {
+    if (selectedWords.length === 0) {
+        alert('Please select words to add.');
+        return;
+    }
+
+    const wordIds = selectedWords.map(word => word.id);
+
+    fetch('/add_flashcards/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ word_ids: wordIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Failed to add flashcards.');
+        }
+    });
+});
+
+commonVocabSlider.addEventListener('input', function() {
+    commonVocabCount.textContent = commonVocabSlider.value;
+});
+
+// Fetch common vocab based on slider value
+fetchCommonVocabButton.addEventListener('click', function() {
+    const count = commonVocabSlider.value;
+
+    fetch(`/fetch_common_vocab/${count}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && Array.isArray(data.words)) {
+                data.words.forEach(word => {
+                    addWord(word);  // Add each word as a flashcard
+                });
+            } else {
+                alert('No words found.');
+            }
+        })
+        .catch(err => console.error('Error fetching data:', err));
 });

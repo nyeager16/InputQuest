@@ -14,15 +14,18 @@
     {% include 'sidebar.html' %}
     {% endblock %}
     <div class="container">
-        <div class="flashcard-list">
-            <ul id="wordList">
-                <li id="filterButton" class="flashcard-item">{{ filter_message }}</li>
-                {% for word in words %}
-                    <li class="flashcard-item" data-id="{{ word.id }}" data-definition="{{ word.definition_text }}">
-                        <div class="flashcard-column word-column">{{ word.word_text }}</div>
-                    </li>
-                {% endfor %}
-            </ul>
+        <div class="flashcard-section">
+            <button id="openAddFlashcards">Add Vocab</button>
+            <div class="flashcard-list">
+                <ul id="wordList">
+                    <li id="filterButton" class="flashcard-item">{{ filter_message }}</li>
+                    {% for word in words %}
+                        <li class="flashcard-item" data-id="{{ word.id }}" data-definition="{{ word.definition_text }}">
+                            <div class="flashcard-column word-column">{{ word.word_text }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
         <div class="flashcard-detail">
             <h2>Edit Flashcard</h2>
@@ -58,6 +61,22 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+        <!-- Overlay HTML -->
+        <div id="addFlashcardsOverlay" class="overlay hidden">
+            <div class="overlay-content">
+                <div class="slider-container">
+                    <input type="range" min="1" max="500" value="10" class="slider" id="commonVocabSlider">
+                    <p class="commonVocabCount" id="commonVocabCount">10</p>
+                </div>
+                <button id="fetchCommonVocabButton">Get Common Vocab</button>
+                <hr class="divider">
+                <input type="text" id="word-search" placeholder="Search...">
+                <ul id="search-results"></ul>
+                <ul id="selectedWordsList" class="flashcard-list"></ul>
+                <button id="addWordsButton">Add Words</button>
+                <button id="cancelButton">Cancel</button>
             </div>
         </div>
     </div>

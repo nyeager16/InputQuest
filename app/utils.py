@@ -58,7 +58,11 @@ def add_words(user, word_ids):
     if undefined_word_ids:
         add_definitions(undefined_word_ids, 'pl')
     words = Word.objects.filter(id__in=word_ids)
-    user_words = [UserWord(user=user, word=word) for word in words]
+    user_words = []
+    for word in words:
+        user_word = UserWord.objects.filter(user=user, word=word).first()
+        if not user_word:
+            user_words.append(UserWord(user=user, word=word))
     UserWord.objects.bulk_create(user_words)
 
 def remove_words(user, word_ids):

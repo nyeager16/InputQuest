@@ -299,6 +299,7 @@ def update_queue_ci(request):
 
     return JsonResponse({'status': 'error'})
 
+@login_required(login_url="/login/")
 def generate_questions(request, video_id, start, end):
     min_duration = 30
     length = end-start
@@ -341,6 +342,7 @@ def generate_questions(request, video_id, start, end):
 
     return JsonResponse({"questions": sampled_questions})
 
+@login_required(login_url="/login/")
 def submit_answers(request, video_id, start, end):
     if request.method == "POST":
         user = request.user
@@ -573,6 +575,7 @@ def about(request):
 
 def search_word(request):
     query = request.GET.get('q', '')
+    dropdown_count = 20
     if query:
         words = (
             Word.objects
@@ -583,7 +586,7 @@ def search_word(request):
         )
         
         distinct_words = list(dict.fromkeys(words))
-        return JsonResponse(distinct_words[:20], safe=False)
+        return JsonResponse(distinct_words[:dropdown_count], safe=False)
 
     return JsonResponse([], safe=False)
 
@@ -666,6 +669,56 @@ def learn_word(request, word):
                                                'conjugation_table': conjugation_table[0],
                                                'table_type': conjugation_table[1]},)
 
+def search_word_flashcard(request):
+    query = request.GET.get('q', '')
+    dropdown_count = 20
+    if query:
+        words = (
+            Word.objects
+            .filter(word_text__istartswith=query)
+            .annotate(instance_count=Count('wordinstance'))
+            .order_by('-instance_count', 'word_text')
+            .values('id', 'word_text')
+        )
+        
+        word_dicts = [{'id': word['id'], 'word_text': word['word_text']} for word in words][:2*dropdown_count]
+        # Ensure no duplicates by converting the list to a dictionary and back to a list
+        distinct_word_dicts = list(dict.fromkeys([tuple(d.items()) for d in word_dicts]))
+        distinct_word_dicts = [dict(items) for items in distinct_word_dicts]
+        return JsonResponse(distinct_word_dicts[:dropdown_count], safe=False)
+
+    return JsonResponse([], safe=False)
+
+@login_required(login_url="/login/")
+def add_flashcards(request):
+    if request.method == 'POST':
+        user = request.user
+        data = json.loads(request.body)
+        word_ids = data.get('word_ids', [])
+
+        words = Word.objects.filter(id__in=word_ids).exclude(root__isnull=True)
+        root_ids = list(words.values_list('root_id', flat=True))
+        root_word_ids = list(set(root_ids+word_ids))
+        print(root_word_ids)
+
+        add_words(user, root_word_ids)
+        calculate_video_CI(user.id)
+        return JsonResponse({'status': 'success'}, status=200)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+@login_required(login_url="/login/")
+def fetch_common_vocab(request, count):
+    count = int(count)
+    if count:
+        if count == 0:
+            return JsonResponse({'words': []})
+        words = get_common_words(request.user)[:count]
+        words = [{'id': word['root_word_id'], 'word_text': word['root_word']} for word in words]
+        return JsonResponse({'words': words})
+    
+    return JsonResponse({'error': 'Invalid request or missing count parameter'}, status=400)
+
 @login_required(login_url="/login/")
 def get_conjugation_table_view(request, word_id):
     word = Word.objects.get(id=word_id)
@@ -673,6 +726,7 @@ def get_conjugation_table_view(request, word_id):
     return JsonResponse({'status': 'success', 'conjugation_table': conjugation_table[0],
                          'table_type': conjugation_table[1]})
 
+@login_required(login_url="/login/")
 def save_selected_word(request):
     if request.method == "POST":
         data = json.loads(request.body)

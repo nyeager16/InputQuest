@@ -40,6 +40,9 @@ urlpatterns = [
 
     path('get-conjugation-table/<int:word_id>/', views.get_conjugation_table_view, name='get_conjugation_table'),
     path('save-selected-word/', views.save_selected_word, name='save_selected_word'),
+    path('fetch_common_vocab/<str:count>/', views.fetch_common_vocab, name='fetch_common_vocab'),
+    path('add_flashcards/', views.add_flashcards, name='add_flashcards'),
+    path('search_word_flashcard/', views.search_word_flashcard, name='search_word_flashcard'),
 
     path('about/', views.about, name='about'),
     

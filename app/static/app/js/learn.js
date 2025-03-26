@@ -95,11 +95,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 searchResults.innerHTML = '';
                 if (data.length > 0) {
-                    data.forEach(word => {  // 'word' is now just the string value
+                    data.forEach(word => {
                         const li = document.createElement('li');
-                        li.textContent = word;  // 'word' directly holds the word_text value
+                        li.textContent = word;
                         li.addEventListener('click', function() {
-                            window.location.href = `/learn/${word}/`;  // Directly use the string word here
+                            window.location.href = `/learn/${word}/`;
                         });
                         searchResults.appendChild(li);
                     });
