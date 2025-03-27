@@ -347,6 +347,7 @@ def submit_answers(request, video_id, start, end):
     if request.method == "POST":
         user = request.user
         data = json.loads(request.body)
+        data = {k: v for k, v in data.items() if v.strip()}
 
         existing_answers = {answer.question_id: answer for answer in Answer.objects.filter(question_id__in=data.keys(), user=request.user)}
 
@@ -367,8 +368,9 @@ def submit_answers(request, video_id, start, end):
 
         sentences = Sentence.objects.filter(video_id=video_id, start__gte=start, end__lte=end).order_by('id')
         total_text = " ".join(sentences.values_list('text', flat=True))
+        answers = answers_to_update+answers_to_create
 
-        feedback = generate_feedback(data, total_text, user)
+        feedback = generate_feedback(answers, total_text, user)
         return JsonResponse({"feedback": feedback})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -699,7 +701,6 @@ def add_flashcards(request):
         words = Word.objects.filter(id__in=word_ids).exclude(root__isnull=True)
         root_ids = list(words.values_list('root_id', flat=True))
         root_word_ids = list(set(root_ids+word_ids))
-        print(root_word_ids)
 
         add_words(user, root_word_ids)
         calculate_video_CI(user.id)

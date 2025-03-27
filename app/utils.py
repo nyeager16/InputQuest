@@ -128,49 +128,78 @@ def generate_question(sentences):
         api_key=settings.OPENAI_API_KEY
     )
 
-    prompt = f"Given the following sentences from a video transcript, generate a listening comprehension question in Polish:\n\nSentences:\n{sentences}\n\nQuestion:"
+    prompt = f"In 1 sentence, generate a listening comprehension question based on the following sentence(s) in Polish:\n\n{sentences}"
     
     response = client.chat.completions.create(
+        model="gpt-4o-mini",
         messages=[
             {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "You are a helpful assistant that creates listening comprehension questions."
+                    }
+                ]
+            },
+            {
                 "role": "user",
-                "content": prompt,
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt
+                    }
+                ]
             }
-        ],
-        model="gpt-4o-mini",
+        ]
     )
 
     return response.choices[0].message.content
 
-def generate_feedback(data, total_text, user):
+def generate_feedback(answers, total_text, user):
     if Feedback.objects.count() >= 200:
         return {str(question_id): "Maximum sitewide feedback reached. The limit will increase once this feature exits beta." for question_id in data.keys()}
     feedback_dict = {}
     feedback_objects = []
 
     client = OpenAI(
-            api_key=settings.OPENAI_API_KEY
-        )
+        api_key=settings.OPENAI_API_KEY
+    )
 
-    answers = Answer.objects.filter(question_id__in=data.keys(), user=user).select_related("question")
     for answer in answers:
         question = answer.question
 
         prompt = f"""
-            Given the following text:
-            
-            \"\"\"{total_text}\"\"\"
-            
-            Provide feedback to the user's answer in English in 1-3 sentences, providing a sample answer in Polish if needed.
-            
-            **Question:** {question.text}
-            **User's Answer:** {answer.text}
+            Text: "{total_text}"
+
+            Question: "{question.text}"
+
+            Answer: "{answer.text}"
+
+            Instruction: 
+            - Provide feedback in **English** on the answer's grammar and spelling in 1-3 sentences.
+            - Provide a **sample answer** in the **question's language** using the provided answer as a guide. The sample should be 1 sentence long.
+            - Make sure to follow the format: "feedback \n example"
             """
         response = client.chat.completions.create(
             messages=[
                 {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "You are a helpful assistant that provides concise feedback in a natural way like an instructor speaking."
+                        }
+                    ]
+                },
+                {
                     "role": "user",
-                    "content": prompt,
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
                 }
             ],
             model="gpt-4o-mini",
@@ -181,7 +210,6 @@ def generate_feedback(data, total_text, user):
         feedback_objects.append(Feedback(answer=answer, user=user, text=feedback_text))
     if feedback_objects:
         Feedback.objects.bulk_create(feedback_objects)
-    
     return feedback_dict
 
 def get_optimal_review_time(predicted_days, retention_threshold=0.9):

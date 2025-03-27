@@ -77,13 +77,21 @@ document.querySelector("#submit-answers-container form").addEventListener("submi
     let end = document.getElementById("end").getAttribute("data-end");
     let answers = {}
 
+    // Show loading indicator and hide the submit button
     submitLoadingIndicator.style.display = "block";
     submitButton.style.display = "none";
 
+    // Collect answers
     document.querySelectorAll(".question-wrapper").forEach((wrapper) => {
         let questionId = wrapper.querySelector("input[name='question_id']").value;
         let answer = wrapper.querySelector(".question-input").value;
         answers[questionId] = answer;
+    });
+
+    // Clear old feedback
+    document.querySelectorAll(".answer-feedback").forEach((feedbackElement) => {
+        feedbackElement.style.display = "none";
+        feedbackElement.innerHTML = "";
     });
 
     submitLoadingIndicator.style.display = "block";
@@ -104,7 +112,8 @@ document.querySelector("#submit-answers-container form").addEventListener("submi
         Object.keys(data.feedback).forEach(questionId => {
             let feedbackElement = document.getElementById(`feedback_${questionId}`);
             if (feedbackElement) {
-                feedbackElement.textContent = data.feedback[questionId];
+                const feedbackText = data.feedback[questionId].replace(/\n/g, "<br>"); // New lines
+                feedbackElement.innerHTML = feedbackText;
                 feedbackElement.style.display = "block";
             }
         });
