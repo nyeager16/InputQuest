@@ -18,9 +18,9 @@ urlpatterns = [
 
     path('words/common/${count}', common_words, name='common-words'),
 
-
-    path('login/', user_login, name='api-login'),
+    path('login/', user_login, name='login'),
     path('signup/', user_signup, name='signup'),
 
+    path('token/', TokenObtainPairView.as_view(), name='token-obtain-pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]

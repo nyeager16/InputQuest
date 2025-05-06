@@ -1,11 +1,9 @@
-export async function getUserPreferences() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/preferences/`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access')}`,
-      'Content-Type': 'application/json',
-    },
-  });
+import { fetchWithAuth } from './fetchWithAuth';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export async function getUserPreferences() {
+  const res = await fetchWithAuth(`${API_URL}/api/users/me/preferences/`);
   if (!res.ok) throw new Error('Failed to fetch user preferences');
   return await res.json();
 }
@@ -14,12 +12,8 @@ export async function updateUserPreferences(data: {
   queue_CI: number;
   max_clip_length: number;
 }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/preferences/`, {
+  const res = await fetchWithAuth(`${API_URL}/api/users/me/preferences/`, {
     method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access')}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(data),
   });
 
@@ -28,26 +22,14 @@ export async function updateUserPreferences(data: {
 }
 
 export async function getUserWords() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/userwords/`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access')}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
+  const res = await fetchWithAuth(`${API_URL}/api/users/me/userwords/`);
   if (!res.ok) throw new Error('Failed to fetch user words');
   return await res.json();
 }
 
 export async function getCommonVocab() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/commonvocab/`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access')}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!res.ok) throw new Error('Failed to fetch user words');
+  const res = await fetchWithAuth(`${API_URL}/api/commonvocab/`);
+  if (!res.ok) throw new Error('Failed to fetch common vocab');
   return await res.json();
 }
 
@@ -57,7 +39,7 @@ export async function signupUser(formData: {
   password: string;
   password2: string;
 }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signup/`, {
+  const res = await fetch(`${API_URL}/api/signup/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(formData),
@@ -69,7 +51,7 @@ export async function signupUser(formData: {
     const errorMessage =
       data.detail ||
       data.message ||
-      Object.values(data).flat().join(' ') || // extracts all serializer messages
+      Object.values(data).flat().join(' ') ||
       'Signup failed';
     throw new Error(errorMessage);
   }
@@ -81,7 +63,7 @@ export async function loginUser(formData: {
   username: string;
   password: string;
 }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login/`, {
+  const res = await fetch(`${API_URL}/api/login/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(formData),
