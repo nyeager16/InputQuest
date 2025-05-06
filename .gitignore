@@ -1,0 +1,9 @@
+.env
+.cache/
+.pytest_cache/
+__pycache__/
+.vscode/
+app/migrations/*
+backend/data/*
+app/nn_srs/data/*
+TODO.md
