@@ -13,7 +13,8 @@ class Word(models.Model):
     tag = models.CharField(max_length=60, null=True, db_index=True)
     wtype = models.CharField(max_length=60, null=True, db_index=True)
     abb = models.CharField(max_length=40, null=True, db_index=True)
-    root = models.ForeignKey('self', on_delete=models.SET_NULL, null=True)
+    root = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, db_index=True, related_name='derived_words')
+    instance_count = models.IntegerField(default=0)
 
 class UserWord(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
@@ -31,6 +32,11 @@ class UserWord(models.Model):
 
     def load_card(self):
         return Card.from_dict(self.data)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'word'], name='unique_user_word')
+        ]
 
 class Definition(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)

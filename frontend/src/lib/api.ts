@@ -27,10 +27,27 @@ export async function getUserWords() {
   return await res.json();
 }
 
-export async function getCommonVocab() {
-  const res = await fetchWithAuth(`${API_URL}/api/commonvocab/`);
-  if (!res.ok) throw new Error('Failed to fetch common vocab');
+export async function getUserWordIds() {
+  const res = await fetchWithAuth(`${API_URL}/api/users/me/userwords/ids/`);
+  if (!res.ok) throw new Error('Failed to fetch user words');
   return await res.json();
+}
+
+export async function getCommonWords() {
+  const res = await fetchWithAuth(`${API_URL}/api/words/common/100/`);
+  if (!res.ok) throw new Error('Failed to fetch common words');
+  return await res.json();
+}
+
+export async function addUserWord(wordId: number) {
+  const res = await fetchWithAuth(`${API_URL}/api/users/me/userwords/${wordId}/`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to add word');
+  }
+  return await res.json().catch(() => ({}));
 }
 
 export async function signupUser(formData: {
