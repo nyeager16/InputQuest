@@ -16,7 +16,6 @@ export async function updateUserPreferences(data: {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
-
   if (!res.ok) throw new Error('Failed to update user preferences');
   return await res.json();
 }
@@ -37,6 +36,23 @@ export async function getCommonWords() {
   const res = await fetchWithAuth(`${API_URL}/api/words/common/100/`);
   if (!res.ok) throw new Error('Failed to fetch common words');
   return await res.json();
+}
+
+export async function getUserReviews() {
+  const res = await fetchWithAuth(`${API_URL}/api/users/me/reviews/`);
+  if (!res.ok) throw new Error('Failed to fetch user reviews');
+  return await res.json();
+}
+
+export async function submitReview(userWordId: number, rating: 0 | 1): Promise<void> {
+  const res = await fetchWithAuth(
+    `${API_URL}/api/userwords/${userWordId}/update/${rating}/`, {
+      method: 'PATCH',
+    });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.detail || 'Failed to submit review');
+  }
 }
 
 export async function addUserWord(wordId: number) {

@@ -115,3 +115,16 @@ class UserPreferences(models.Model):
     fsrs = models.BooleanField(default=True)
     vocab_filter = models.IntegerField(default=0)
     max_clip_length = models.IntegerField(default=300)
+
+class WordSet(models.Model):
+    words = models.ManyToManyField(Word)
+    hash = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class WordSetVideoScore(models.Model):
+    word_set = models.ForeignKey(WordSet, on_delete=models.CASCADE, related_name='video_scores')
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    score = models.IntegerField()
+    
+    class Meta:
+        unique_together = ('word_set', 'video')

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getCommonWords, getUserWordIds, addUserWord } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import Checkbox from '@/components/Checkbox'; // 👈 Import the new component
+import Checkbox from '@/components/Checkbox';
 
 type Word = {
   id: number;

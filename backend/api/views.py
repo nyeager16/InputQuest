@@ -3,8 +3,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
+from django.utils.timezone import now
+from django.db.models import Q, Prefetch
+from django.shortcuts import get_object_or_404
+from fsrs import Scheduler, Rating
 from .models import (
-    UserPreferences, Language, Word, UserWord, WordInstance
+    UserPreferences, Language, Word, UserWord, WordInstance, Definition
 )
 from .serializers import (
     UserSerializer, UserPreferencesSerializer, UserLoginSerializer, UserSignupSerializer,
@@ -13,11 +17,9 @@ from .serializers import (
 from .utils import (
     get_common_words
 )
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def hello_world(request):
-    return Response({"message": "Hello from Django!"})
+from .tasks import (
+    add_definitions, calculate_user_video_scores
+)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -69,6 +71,11 @@ def user_signup(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+def add_word(user, word):
+    user_word = UserWord(user=user, word=word)
+    user_word.save()
+    calculate_user_video_scores(user.id)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def change_user_words(request, id):
@@ -77,8 +84,7 @@ def change_user_words(request, id):
             word = Word.objects.get(id=id)
         except Word.DoesNotExist:
             return Response({"error": "Word not found"}, status=404)
-        user_word = UserWord(user=request.user, word=word)
-        user_word.save()
+        add_word(request.user, word)
         return Response(status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
@@ -101,3 +107,65 @@ def common_words(request, count):
     words = get_common_words(language)[:count]
     serializer = WordSerializer(words, many=True)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_reviews(request):
+    user = request.user
+
+    user_reviews = UserWord.objects.filter(
+        user=user,
+        needs_review=True,
+        data__due__lte=now().isoformat()
+    )
+
+    if not user_reviews.exists():
+        return Response({'words': []})
+
+    words_data = list(user_reviews.values('id', 'word_id', 'word__text'))
+
+    # Collect word_ids for filtering definitions
+    word_ids = [word['word_id'] for word in words_data]
+
+    # Query user-specific and fallback definitions
+    definition_queryset = Definition.objects.filter(
+        Q(user=user) | Q(user=None),
+        word_id__in=word_ids
+    )
+
+    # Pick one definition per word, preferring user-specific
+    definitions_dict = {}
+    for definition in definition_queryset:
+        # Only override if there's no user-specific one already stored
+        if definition.word_id not in definitions_dict or definition.user == user:
+            definitions_dict[definition.word_id] = definition.text
+
+    # Add definition to each word
+    for word in words_data:
+        word['definition'] = definitions_dict.get(word['word_id'], "")
+
+    return Response({'words': words_data})
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def submit_review(request, id, rating):
+    if request.method == 'PATCH':
+        user = request.user
+        user_word = get_object_or_404(UserWord, id=id, user=user)
+        if rating == 0:
+            fsrs_rating = Rating.Again
+        else:
+            fsrs_rating = Rating.Good
+        """
+        Handles the submission of the user's review for a word.
+        Rating is passed in (from 0 to 1) and used to update the review schedule.
+        """
+        user_preferences = UserPreferences.objects.get(user=user)
+        desired_retention = user_preferences.desired_retention
+
+        scheduler = Scheduler(desired_retention=desired_retention)
+        card = user_word.load_card()
+        card, _ = scheduler.review_card(card, fsrs_rating)
+        user_word.save_card(card)
+
+        return Response({'status': 'success'})
