@@ -12,7 +12,7 @@ from .models import (
 )
 from .serializers import (
     UserSerializer, UserPreferencesSerializer, UserLoginSerializer, UserSignupSerializer,
-    UserWordSerializer, WordSerializer
+    UserWordSerializer, WordSerializer, DefinitionSerializer
 )
 from .utils import (
     get_common_words
@@ -75,6 +75,7 @@ def add_word(user, word):
     user_word = UserWord(user=user, word=word)
     user_word.save()
     calculate_user_video_scores(user.id)
+    add_definitions([word.id], 'pl')
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -169,3 +170,39 @@ def submit_review(request, id, rating):
         user_word.save_card(card)
 
         return Response({'status': 'success'})
+
+@api_view(['GET', 'PATCH'])
+@permission_classes([AllowAny])
+def definitions(request, word_id):
+    try:
+        word = Word.objects.get(id=word_id)
+    except Word.DoesNotExist:
+        return Response({"error": "Word not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    user = request.user if request.user.is_authenticated else None
+
+    # Prefer user's definition
+    definition = Definition.objects.filter(user=user, word=word).first()
+
+    # If user's doesn't exist, fall back to global definition
+    if not definition:
+        definition = Definition.objects.filter(user=None, word=word).first()
+
+    if request.method == 'GET':
+        if not definition:
+            return Response({"text": ""})
+        serializer = DefinitionSerializer(definition)
+        return Response(serializer.data)
+
+    elif request.method == 'PATCH':
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Ensure there's a user-owned Definition object
+        definition, _ = Definition.objects.get_or_create(user=request.user, word=word)
+        serializer = DefinitionSerializer(definition, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

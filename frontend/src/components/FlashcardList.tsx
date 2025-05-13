@@ -4,6 +4,7 @@ import React from 'react';
 
 type WordCard = {
   word: {
+    id: number;
     text: string;
   };
   data: Record<string, any>;
@@ -12,16 +13,25 @@ type WordCard = {
 type FlashcardListProps = {
   cards?: WordCard[];
   onWordClick: (card: WordCard) => void;
+  selectedWordId?: number;
 };
 
-const FlashcardList: React.FC<FlashcardListProps> = ({ cards = [], onWordClick }) => {
+const FlashcardList: React.FC<FlashcardListProps> = ({
+  cards = [],
+  onWordClick,
+  selectedWordId,
+}) => {
   return (
-    <div className="space-y-2 w-64 p-4 bg-gray-100 rounded-xl shadow">
+    <div className="w-64 h-full overflow-y-auto p-2 bg-gray-100 rounded-xl shadow">
       {cards.map((card, index) => (
         <div
           key={index}
           onClick={() => onWordClick(card)}
-          className="cursor-pointer px-4 py-2 bg-white hover:bg-blue-100 rounded transition"
+          className={`cursor-pointer px-3 py-2 text-sm border-b ${
+            selectedWordId === card.word.id
+              ? 'bg-blue-200 font-semibold'
+              : 'bg-white hover:bg-blue-100'
+          }`}
         >
           {card.word.text}
         </div>

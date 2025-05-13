@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from .models import (
-    UserPreferences, Language, Word, UserWord
+    UserPreferences, Language, Word, UserWord, Definition
 )
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -97,3 +97,9 @@ class UserWordSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserWord
         fields = ['id', 'word', 'needs_review', 'data']
+
+class DefinitionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Definition
+        fields = ['id', 'text', 'word', 'user']
+        read_only_fields = ['id', 'word', 'user']
