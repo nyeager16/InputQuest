@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FlashcardList from '@/components/FlashcardList';
-import { getUserWords, getDefinition, saveDefinition } from '@/lib/api';
+import { getUserWords, getDefinition, saveDefinition, deleteUserWords } from '@/lib/api';
 
 export default function HomePage() {
   const [cards, setCards] = useState<any[]>([]);
@@ -12,10 +12,17 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getUserWords()
-      .then(setCards)
-      .catch(err => console.error('Error loading words:', err));
+    loadWords();
   }, []);
+
+  const loadWords = async () => {
+    try {
+      const words = await getUserWords();
+      setCards(words);
+    } catch (err) {
+      console.error('Error loading words:', err);
+    }
+  };
 
   const handleWordClick = async (card: any) => {
     setSelectedCard(card);
@@ -41,9 +48,27 @@ export default function HomePage() {
 
     try {
       await saveDefinition(selectedCard.word.id, definition);
-      alert('Definition saved.');
     } catch {
       alert('Failed to save definition.');
+    }
+  };
+
+  const handleDeleteWords = async (idsToDelete: number[]) => {
+    // Optimistically update UI
+    setCards(prev => prev.filter(card => !idsToDelete.includes(card.word.id)));
+
+    // Clear selection if selected card was deleted
+    if (selectedCard && idsToDelete.includes(selectedCard.word.id)) {
+      setSelectedCard(null);
+      setDefinition('');
+    }
+
+    try {
+      await deleteUserWords(idsToDelete);
+    } catch (err) {
+      console.error('Failed to delete words:', err);
+      alert('Failed to delete some words. Please refresh.');
+      loadWords();
     }
   };
 
@@ -54,9 +79,10 @@ export default function HomePage() {
           cards={cards}
           onWordClick={handleWordClick}
           selectedWordId={selectedCard?.word?.id}
+          onDeleteWords={handleDeleteWords}
         />
       </div>
-      <div className="flex-1 bg-white rounded-xl shadow p-6 overflow-auto">
+      <div className="flex-1 bg-white rounded-xl p-6 overflow-auto">
         {selectedCard ? (
           <div>
             <h2 className="text-xl font-semibold mb-2">{selectedCard.word.text}</h2>

@@ -135,11 +135,21 @@ export async function getDefinition(wordId: number) {
 }
 
 export async function saveDefinition(wordId: number, text: string) {
-  const res = await fetch(`${API_URL}/api/definitions/${wordId}/`, {
+  const res = await fetchWithAuth(`${API_URL}/api/definitions/${wordId}/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
+  if (!res.ok) throw new Error('Failed to save definition');
+  return await res.json();
+}
+
+export async function deleteUserWords(ids: number[]) {
+  const res = await fetchWithAuth(`${API_URL}/api/userwords/delete/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  },);
   if (!res.ok) throw new Error('Failed to save definition');
   return await res.json();
 }

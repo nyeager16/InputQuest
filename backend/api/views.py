@@ -79,7 +79,7 @@ def add_word(user, word):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def change_user_words(request, id):
+def user_words(request, id):
     if request.method == 'POST':
         try:
             word = Word.objects.get(id=id)
@@ -87,6 +87,19 @@ def change_user_words(request, id):
             return Response({"error": "Word not found"}, status=404)
         add_word(request.user, word)
         return Response(status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def user_words_del(request):
+    word_ids = request.data.get('ids', [])
+
+    if not isinstance(word_ids, list):
+        return Response({'error': 'Invalid data format: ids must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Delete UserWord entries for current user and matching word IDs
+    deleted, _ = UserWord.objects.filter(user=request.user, word_id__in=word_ids).delete()
+
+    return Response({'deleted': deleted}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

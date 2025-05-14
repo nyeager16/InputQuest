@@ -1,4 +1,3 @@
-// components/Checkbox.tsx
 type CheckboxProps = {
   label: string;
   checked: boolean;
