@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from .models import (
-    UserPreferences, Language, Word, UserWord, Definition
+    UserPreferences, Language, Word, UserWord, Definition,
+    Video, Channel
 )
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -103,3 +104,21 @@ class DefinitionSerializer(serializers.ModelSerializer):
         model = Definition
         fields = ['id', 'text', 'word', 'user']
         read_only_fields = ['id', 'word', 'user']
+
+class ChannelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Channel
+        fields = ['id', 'name', 'url']
+
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Language
+        fields = ['id', 'name']
+
+class VideoSerializer(serializers.ModelSerializer):
+    channel = ChannelSerializer(read_only=True)
+    language = LanguageSerializer(read_only=True)
+
+    class Meta:
+        model = Video
+        fields = ['id', 'url', 'title', 'channel', 'language', 'auto_generated']

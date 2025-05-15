@@ -57,11 +57,12 @@ def store_wordset_video_scores(word_ids: set, video_scores: list[tuple[int, int]
                 score=score
             ))
 
-        # Avoid duplicates: optionally clear existing scores first
+        # Avoid duplicates
         WordSetVideoScore.objects.filter(word_set=word_set).delete()
 
         # Bulk create new ones
         WordSetVideoScore.objects.bulk_create(video_score_objects)
+        return word_set
 
 def generate_video_score_list(word_ids):
     # Get all words whose root is in the target set

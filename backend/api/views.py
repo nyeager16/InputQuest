@@ -8,11 +8,11 @@ from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404
 from fsrs import Scheduler, Rating
 from .models import (
-    UserPreferences, Language, Word, UserWord, WordInstance, Definition
+    UserPreferences, Language, Word, UserWord, WordInstance, Definition, Video
 )
 from .serializers import (
     UserSerializer, UserPreferencesSerializer, UserLoginSerializer, UserSignupSerializer,
-    UserWordSerializer, WordSerializer, DefinitionSerializer
+    UserWordSerializer, WordSerializer, DefinitionSerializer, VideoSerializer
 )
 from .utils import (
     get_common_words
@@ -219,3 +219,15 @@ def definitions(request, word_id):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_videos(request):
+    if request.user.is_authenticated:
+        videos = Video.objects.select_related('channel', 'language').all()
+        serializer = VideoSerializer(videos, many=True)
+        return Response(serializer.data)
+    else:
+        videos = Video.objects.select_related('channel', 'language').all()
+        serializer = VideoSerializer(videos, many=True)
+        return Response(serializer.data)

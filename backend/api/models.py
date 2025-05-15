@@ -105,17 +105,6 @@ class Feedback(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     text = models.TextField()
 
-class UserPreferences(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
-    comprehension_level_min = models.IntegerField(default=0)
-    comprehension_level_max = models.IntegerField(default=100)
-    queue_CI = models.IntegerField(default=100)
-    desired_retention = models.FloatField(default=0.9)
-    fsrs = models.BooleanField(default=True)
-    vocab_filter = models.IntegerField(default=0)
-    max_clip_length = models.IntegerField(default=300)
-
 class WordSet(models.Model):
     words = models.ManyToManyField(Word)
     hash = models.CharField(max_length=64, unique=True, db_index=True)
@@ -128,3 +117,15 @@ class WordSetVideoScore(models.Model):
     
     class Meta:
         unique_together = ('word_set', 'video')
+
+class UserPreferences(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
+    word_set = models.ForeignKey(WordSet, on_delete=models.SET_NULL, null=True, default=None)
+    comprehension_level_min = models.IntegerField(default=0)
+    comprehension_level_max = models.IntegerField(default=100)
+    queue_CI = models.IntegerField(default=100)
+    desired_retention = models.FloatField(default=0.9)
+    fsrs = models.BooleanField(default=True)
+    vocab_filter = models.IntegerField(default=0)
+    max_clip_length = models.IntegerField(default=300)

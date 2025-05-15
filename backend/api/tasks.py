@@ -61,4 +61,8 @@ def calculate_user_video_scores(user_id):
     word_qs = Word.objects.filter(userword__user_id=user_id).distinct()
     word_ids = set(word_qs.values_list('id', flat=True))
     video_scores = generate_video_score_list(word_ids)
-    store_wordset_video_scores(word_ids, video_scores)
+    word_set = store_wordset_video_scores(word_ids, video_scores)
+    user_preferences = UserPreferences.objects.get(user_id=user_id)
+    user_preferences.word_set = word_set
+    user_preferences.save()
+    

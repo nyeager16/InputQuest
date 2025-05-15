@@ -153,3 +153,11 @@ export async function deleteUserWords(ids: number[]) {
   if (!res.ok) throw new Error('Failed to save definition');
   return await res.json();
 }
+
+export async function getVideos() {
+  const res = await fetchWithAuth(`${API_URL}/api/videos/`, {
+    method: 'GET',
+  });
+  if (!res.ok) throw new Error('Failed to fetch videos');
+  return await res.json();
+}
