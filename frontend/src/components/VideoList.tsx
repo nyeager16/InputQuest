@@ -1,32 +1,82 @@
-'use client';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { getVideos, VideoWithScore } from '@/lib/api';
+import ScoreBox from './ScoreBox';
 
-import { useEffect, useState } from 'react';
-import { getVideos } from '@/lib/api';
-
-type Video = {
-  id: number;
-  url: string;
-  title: string;
-  channel: { name: string };
+type Props = {
+  selectedVideoId: number | null;
+  onSelect: (video: VideoWithScore) => void;
 };
 
-export default function VideoList() {
-  const [videos, setVideos] = useState<Video[]>([]);
+export default function VideoList({ selectedVideoId, onSelect }: Props) {
+  const [videos, setVideos] = useState<VideoWithScore[]>([]);
+  const [nextPage, setNextPage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchVideos = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const data = await getVideos(nextPage ?? undefined);
+      setVideos((prev) => {
+        const existingIds = new Set(prev.map((v) => v.video.id));
+        const newUnique = data.results.filter((v) => !existingIds.has(v.video.id));
+        return [...prev, ...newUnique];
+      });
+      setNextPage(data.next);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [nextPage, loading]);
 
   useEffect(() => {
-    getVideos().then(setVideos).catch(console.error);
+    fetchVideos();
   }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && nextPage) {
+          fetchVideos();
+        }
+      },
+      { rootMargin: '100px' }
+    );
+
+    const sentinel = observerRef.current;
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [nextPage, fetchVideos]);
 
   return (
     <ul className="p-4">
-      {videos.map((video) => (
-        <li key={video.id} className="flex items-center gap-4 p-2 hover:bg-gray-100 rounded">
-          <div>
-            <h3 className="font-medium text-sm line-clamp-2">{video.title}</h3>
-            <p className="text-sm text-gray-600 line-clamp-2">{video.channel.name}</p>
-          </div>
-        </li>
-      ))}
+      {videos.map((item) => {
+        const isSelected = item.video.id === selectedVideoId;
+        return (
+          <li
+            key={item.video.id}
+            className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100 ${
+              isSelected ? 'bg-blue-100' : ''
+            }`}
+            onClick={() => onSelect(item)}
+          >
+            <div className="flex-1">
+              <h3 className="font-medium text-sm text-gray-900 line-clamp-1">{item.video.title}</h3>
+              <p className="text-xs text-gray-600 line-clamp-1">{item.video.channel.name}</p>
+            </div>
+            <ScoreBox score={item.score} />
+          </li>
+        );
+      })}
+      <div ref={observerRef} />
+      {loading && (
+        <p className="text-center py-4 text-sm text-gray-500">Loading more videos...</p>
+      )}
     </ul>
   );
 }

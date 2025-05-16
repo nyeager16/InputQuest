@@ -2,17 +2,20 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view, permission_classes
 from django.utils.timezone import now
 from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404
 from fsrs import Scheduler, Rating
 from .models import (
-    UserPreferences, Language, Word, UserWord, WordInstance, Definition, Video
+    UserPreferences, Language, Word, UserWord, WordInstance, Definition, Video,
+    UserVideo
 )
 from .serializers import (
-    UserSerializer, UserPreferencesSerializer, UserLoginSerializer, UserSignupSerializer,
-    UserWordSerializer, WordSerializer, DefinitionSerializer, VideoSerializer
+    UserSerializer, UserPreferencesSerializer, UserLoginSerializer, 
+    UserSignupSerializer, UserWordSerializer, WordSerializer, 
+    DefinitionSerializer, VideoSerializer, UserVideoSerializer
 )
 from .utils import (
     get_common_words
@@ -74,7 +77,7 @@ def user_signup(request):
 def add_word(user, word):
     user_word = UserWord(user=user, word=word)
     user_word.save()
-    calculate_user_video_scores(user.id)
+    calculate_user_video_scores(user.id, word.language.id)
     add_definitions([word.id], 'pl')
 
 @api_view(['POST'])
@@ -219,15 +222,54 @@ def definitions(request, word_id):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+class MyVideosPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_videos(request):
+    paginator = MyVideosPagination()
+
     if request.user.is_authenticated:
-        videos = Video.objects.select_related('channel', 'language').all()
-        serializer = VideoSerializer(videos, many=True)
-        return Response(serializer.data)
+        prefs, _ = UserPreferences.objects.get_or_create(user=request.user)
+
+        # User-specific videos, ordered by score
+        user_videos = UserVideo.objects.filter(
+            user=request.user,
+            video__language=prefs.language
+        ).select_related('video', 'video__channel', 'video__language').order_by('-score')
+
+        if user_videos.exists():
+            page = paginator.paginate_queryset(user_videos, request)
+            serializer = UserVideoSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        # Fallback: no UserVideo rows, use default videos with score 0
+        fallback_videos = Video.objects.filter(language=prefs.language)\
+            .select_related('channel', 'language')\
+            .order_by('-id')  # fallback ordering can be any
+
     else:
-        videos = Video.objects.select_related('channel', 'language').all()
-        serializer = VideoSerializer(videos, many=True)
-        return Response(serializer.data)
+        # Anonymous fallback
+        fallback_videos = Video.objects.select_related('channel', 'language')\
+            .order_by('-id')  # fallback ordering can be any
+
+    # Paginate fallback videos
+    page = paginator.paginate_queryset(fallback_videos, request)
+    serialized_page = [
+        {
+            'video': VideoSerializer(video).data,
+            'score': 0
+        } for video in page
+    ]
+    return paginator.get_paginated_response(serialized_page)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def video_words(request, video_id):
+
+
+    return

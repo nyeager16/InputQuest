@@ -88,3 +88,41 @@ def generate_video_score_list(word_ids):
 
     return video_scores
 
+def populate_user_video_scores(user_id, language_id, word_set):
+    # Get all videos filtered by language
+    videos = Video.objects.filter(language_id=language_id)
+
+    # Get all WordSetVideoScore entries for the word_set and these videos
+    wsvs_qs = WordSetVideoScore.objects.filter(
+        word_set=word_set,
+        video__in=videos
+    ).select_related('video')
+
+    # Map video_id -> score for quick lookup
+    video_score_map = {wsvs.video_id: wsvs.score for wsvs in wsvs_qs}
+
+    # Get existing UserVideo for this user and those videos (avoid duplicates)
+    existing_uv_qs = UserVideo.objects.filter(user_id=user_id, video__in=videos)
+    existing_uv_map = {uv.video_id: uv for uv in existing_uv_qs}
+
+    # Prepare lists for bulk_create and bulk_update
+    to_create = []
+    to_update = []
+
+    for video in videos:
+        score = video_score_map.get(video.id, 0)
+        if video.id in existing_uv_map:
+            # Update existing UserVideo if score differs
+            uv = existing_uv_map[video.id]
+            if uv.score != score:
+                uv.score = score
+                to_update.append(uv)
+        else:
+            # Create new UserVideo
+            to_create.append(UserVideo(user_id=user_id, video_id=video.id, score=score))
+
+    with transaction.atomic():
+        if to_create:
+            UserVideo.objects.bulk_create(to_create, batch_size=500)
+        if to_update:
+            UserVideo.objects.bulk_update(to_update, ['score'], batch_size=500)

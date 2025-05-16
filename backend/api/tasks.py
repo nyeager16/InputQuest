@@ -5,7 +5,8 @@ from django.db.models import Q
 from deep_translator import GoogleTranslator
 from deep_translator.exceptions import TranslationNotFound
 from .utils import (
-    generate_video_score_list, store_wordset_video_scores
+    generate_video_score_list, store_wordset_video_scores, 
+    populate_user_video_scores
 )
 
 @background()
@@ -50,14 +51,15 @@ def add_definitions(word_ids, source):
         word = Word.objects.get(id=word_id)
         try:
             translated_word = translator.translate(text=word.text)
+
         except TranslationNotFound:
             translated_word = ""
         definition = Definition.objects.get(word=word, user=None)
-        definition.definition_text = translated_word
+        definition.text = translated_word
         definition.save()
 
 @background()
-def calculate_user_video_scores(user_id):
+def calculate_user_video_scores(user_id, language_id):
     word_qs = Word.objects.filter(userword__user_id=user_id).distinct()
     word_ids = set(word_qs.values_list('id', flat=True))
     video_scores = generate_video_score_list(word_ids)
@@ -65,4 +67,4 @@ def calculate_user_video_scores(user_id):
     user_preferences = UserPreferences.objects.get(user_id=user_id)
     user_preferences.word_set = word_set
     user_preferences.save()
-    
+    populate_user_video_scores(user_id, language_id, word_set)

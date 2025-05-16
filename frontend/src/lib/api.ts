@@ -154,10 +154,36 @@ export async function deleteUserWords(ids: number[]) {
   return await res.json();
 }
 
-export async function getVideos() {
-  const res = await fetchWithAuth(`${API_URL}/api/videos/`, {
+type Video = {
+  id: number;
+  url: string;
+  title: string;
+  channel: { name: string };
+};
+
+export type VideoWithScore = {
+  video: Video;
+  score: number;
+};
+
+export type PaginatedVideosResponse = {
+  results: VideoWithScore[];
+  next: string | null;
+  previous: string | null;
+  count: number;
+};
+
+export async function getVideos(nextPageUrl?: string): Promise<PaginatedVideosResponse> {
+  const url = nextPageUrl ?? `${API_URL}/api/videos/`;
+  const res = await fetchWithAuth(url);
+  if (!res.ok) throw new Error('Failed to fetch videos');
+  return await res.json();
+}
+
+export async function getVideoWords(videoId: number) {
+  const res = await fetchWithAuth(`${API_URL}/api/words/video/${videoId}/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch videos');
+  if (!res.ok) throw new Error('Failed to fetch video words');
   return await res.json();
 }

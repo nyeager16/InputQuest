@@ -57,7 +57,7 @@ class Video(models.Model):
 class UserVideo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
-    percentage = models.FloatField(default=0.0)
+    score = models.IntegerField(default=0)
 
 class WordInstance(models.Model):
     word = models.ForeignKey(Word, on_delete=models.CASCADE)

@@ -65,7 +65,7 @@ export default function ReviewPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <div className="w-full max-w-md border rounded-2xl shadow-lg p-6 text-center bg-white">
+      <div className="w-full max-w-md border shadow-lg p-6 text-center bg-white">
         <div className="text-2xl font-bold mb-4">{card.word__text}</div>
 
         {showAnswer ? (

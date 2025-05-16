@@ -27,7 +27,7 @@ export default function Sidebar() {
     }`;
 
   return (
-    <div className="fixed top-0 left-0 w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
+    <div className="h-screen w-fit bg-gray-800 text-white p-4 flex flex-col">
       <h1 className="text-xl font-bold mb-4">InputQuest</h1>
 
       <div className="mb-4">
@@ -35,6 +35,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-2 flex-grow">
+        <Link href="/" className={linkClass('/')}>Home</Link>
         <Link href="/videos" className={linkClass('/videos')}>Videos</Link>
         <Link href="/watch" className={linkClass('/watch')}>Watch</Link>
         <Link href="/learn" className={linkClass('/learn')}>Learn</Link>

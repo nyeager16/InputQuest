@@ -1,9 +1,7 @@
-// app/layout.tsx
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "@/components/Sidebar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,7 +26,7 @@ export default function RootLayout({
           <Sidebar />
 
           {/* Main Content - Scrollable */}
-          <main className="ml-64 flex-1 overflow-y-auto p-4 h-screen">
+          <main className="flex-1 overflow-y-auto h-screen">
             {children}
           </main>
         </div>
@@ -36,3 +34,4 @@ export default function RootLayout({
     </html>
   );
 }
+
