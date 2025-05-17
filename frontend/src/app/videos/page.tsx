@@ -3,12 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import VideoList from '@/components/VideoList';
 import VideoGrid from '@/components/VideoGrid';
-import { getVideos, VideoWithScore } from '@/lib/api';
+import { getVideos, VideoWithScore, updateUserPreferences } from '@/lib/api';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 export default function VideosPage() {
+  const { data: userPrefs, setPrefs } = useUserPreferences();
   const [selected, setSelected] = useState<VideoWithScore | null>(null);
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(false);
+  const [userResized, setUserResized] = useState(false);
   const [leftWidthPercent, setLeftWidthPercent] = useState(100);
   const [useGrid, setUseGrid] = useState(false);
   const [videos, setVideos] = useState<VideoWithScore[]>([]);
@@ -36,21 +39,28 @@ export default function VideosPage() {
   }, []);
 
   useEffect(() => {
+    if (userPrefs) {
+      setUseGrid(userPrefs.grid_view);
+    }
+  }, [userPrefs]);
+
+  useEffect(() => {
     if (selected) {
       setShowRight(true);
       if (!showLeft) setShowLeft(true);
-      setLeftWidthPercent(66.66);
+
+      // Only set default width if user hasn't resized manually
+      if (!userResized) {
+        setLeftWidthPercent(66.66);
+      }
+    } else {
+      setShowRight(false);
     }
   }, [selected]);
 
   const handleHideLeft = () => {
     if (!showRight || !selected) return;
     setShowLeft(false);
-  };
-
-  const handleHideRight = () => {
-    if (!showLeft) return;
-    setShowRight(false);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -70,6 +80,7 @@ export default function VideosPage() {
   };
 
   const startResizing = () => {
+    setUserResized(true);
     isResizing.current = true;
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -86,12 +97,22 @@ export default function VideosPage() {
           }}
         >
           {/* Toolbar */}
-          <div className="flex justify-between items-center p-2 gap-2">
+          <div className="flex justify-end items-center p-2 gap-2">
             <button
-              onClick={() => setUseGrid((prev) => !prev)}
+              onClick={async () => {
+                const newGridState = !useGrid;
+                setUseGrid(newGridState); // Optimistic UI
+                try {
+                  await updateUserPreferences({ grid_view: newGridState });
+                  setPrefs(prev => ({ ...prev, grid_view: newGridState })); // Update global context
+                } catch (err) {
+                  console.error('Failed to update grid_view', err);
+                  setUseGrid(!newGridState); // Rollback if needed
+                }
+              }}
               className="text-sm px-2 py-1 border rounded bg-white shadow"
             >
-              {useGrid ? '📄 List View' : '🔲 Grid View'}
+              {useGrid ? 'List View' : 'Grid View'}
             </button>
             {showRight && (
               <button
@@ -99,7 +120,7 @@ export default function VideosPage() {
                 disabled={!selected}
                 className="text-sm px-2 py-1 border rounded bg-white shadow disabled:opacity-50"
               >
-                ⬅ Hide
+                Hide
               </button>
             )}
           </div>
@@ -109,12 +130,28 @@ export default function VideosPage() {
               <VideoGrid
                 videos={videos}
                 selectedVideoId={selected?.video.id ?? null}
-                onSelect={setSelected}
+                onSelect={(video) => {
+                  if (selected?.video.id === video.video.id) {
+                    setSelected(null);        // Deselect the video
+                    setShowRight(false);      // Hide the right panel
+                  } else {
+                    setSelected(video);       // Select new video
+                    setShowRight(true);       // Ensure right panel is visible
+                  }
+                }}
               />
             ) : (
               <VideoList
                 selectedVideoId={selected?.video.id ?? null}
-                onSelect={setSelected}
+                onSelect={(video) => {
+                  if (selected?.video.id === video.video.id) {
+                    setSelected(null);        // Deselect the video
+                    setShowRight(false);      // Hide the right panel
+                  } else {
+                    setSelected(video);       // Select new video
+                    setShowRight(true);       // Ensure right panel is visible
+                  }
+                }}
               />
             )}
           </div>
@@ -135,21 +172,11 @@ export default function VideosPage() {
           className="relative overflow-y-auto flex flex-col px-4 py-2"
           style={{
             width: showLeft ? `${100 - leftWidthPercent}%` : '100%',
+            maxWidth: '900px',
+            marginLeft: 'auto',
           }}
         >
-          {/* Toolbar */}
-          <div className="flex justify-between items-center p-2">
-            {showLeft && (
-              <button
-                onClick={handleHideRight}
-                className="text-sm px-2 py-1 border rounded bg-white shadow"
-              >
-                ➡ Hide
-              </button>
-            )}
-            <div />
-          </div>
-
+          <div className="h-10" />
           <div className="flex-1 overflow-y-auto">
             {selected ? (
               <div className="space-y-4">
@@ -183,17 +210,7 @@ export default function VideosPage() {
           onClick={() => setShowLeft(true)}
           className="absolute top-2 left-4 z-20 bg-white border rounded px-2 py-1 text-sm shadow"
         >
-          ➡ Show List
-        </button>
-      )}
-
-      {/* Show Right Panel Button */}
-      {!showRight && selected && (
-        <button
-          onClick={() => setShowRight(true)}
-          className="absolute top-2 right-4 z-20 bg-white border rounded px-2 py-1 text-sm shadow"
-        >
-          ⬅ Show Player
+          Show List
         </button>
       )}
     </div>

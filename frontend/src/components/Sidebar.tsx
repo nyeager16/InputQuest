@@ -1,25 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { getUserPreferences } from '@/lib/api';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 export default function Sidebar() {
-  const [userPrefs, setUserPrefs] = useState<any>(null);
+  const { data: userPrefs } = useUserPreferences();
   const pathname = usePathname();
-
-  useEffect(() => {
-    const loadPrefs = async () => {
-      try {
-        const data = await getUserPreferences();
-        setUserPrefs(data);
-      } catch (err) {
-        console.error('Could not load user preferences:', err);
-      }
-    };
-    loadPrefs();
-  }, []);
+  console.log(userPrefs);
 
   const linkClass = (path: string) =>
     `px-2 py-1 rounded transition ${
@@ -30,8 +18,8 @@ export default function Sidebar() {
     <div className="h-screen w-fit bg-gray-800 text-white p-4 flex flex-col">
       <h1 className="text-xl font-bold mb-4">InputQuest</h1>
 
-      <div className="mb-4">
-        Language: {userPrefs?.language || 'Polishtest'}
+      <div className="mb-4 w-full text-center">
+        Language: {userPrefs?.language?.abb || 'Loading...'}
       </div>
 
       <nav className="flex flex-col gap-2 flex-grow">

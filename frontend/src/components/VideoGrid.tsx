@@ -60,7 +60,7 @@ export default function VideoGrid({ selectedVideoId, onSelect }: Props) {
         return (
           <div
             key={item.video.id}
-            className={`border rounded overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition ${
+            className={`rounded overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition ${
               isSelected ? 'ring-2 ring-blue-500' : ''
             }`}
             onClick={() => onSelect(item)}

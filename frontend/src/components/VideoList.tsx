@@ -60,16 +60,16 @@ export default function VideoList({ selectedVideoId, onSelect }: Props) {
         return (
           <li
             key={item.video.id}
-            className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-100 ${
+            className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
               isSelected ? 'bg-blue-100' : ''
             }`}
             onClick={() => onSelect(item)}
           >
+            <ScoreBox score={item.score} />
             <div className="flex-1">
               <h3 className="font-medium text-sm text-gray-900 line-clamp-1">{item.video.title}</h3>
               <p className="text-xs text-gray-600 line-clamp-1">{item.video.channel.name}</p>
             </div>
-            <ScoreBox score={item.score} />
           </li>
         );
       })}

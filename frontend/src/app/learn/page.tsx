@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getCommonWords, getUserWordIds, addUserWord } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Checkbox from '@/components/Checkbox';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 type Word = {
   id: number;
@@ -17,6 +18,8 @@ const CommonWordsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  const { data: userPrefs, updatePref } = useUserPreferences();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +41,13 @@ const CommonWordsPage = () => {
     fetchData();
   }, []);
 
+  // Initialize hideAdded from user preferences when available
+  useEffect(() => {
+    if (userPrefs && typeof userPrefs.learn_hide_vocab === 'boolean') {
+      setHideAdded(userPrefs.learn_hide_vocab);
+    }
+  }, [userPrefs]);
+
   const handleAdd = async (wordId: number) => {
     try {
       await addUserWord(wordId);
@@ -45,6 +55,12 @@ const CommonWordsPage = () => {
     } catch (err) {
       alert('Failed to add word');
     }
+  };
+
+  const handleToggleHide = () => {
+    const newValue = !hideAdded;
+    setHideAdded(newValue);
+    updatePref?.({ learn_hide_vocab: newValue });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -62,7 +78,7 @@ const CommonWordsPage = () => {
             id="hide-added"
             label="Hide My Vocab"
             checked={hideAdded}
-            onChange={() => setHideAdded((prev) => !prev)}
+            onChange={handleToggleHide}
           />
         </div>
 
@@ -94,7 +110,6 @@ const CommonWordsPage = () => {
                   >
                     Add
                   </button>
-
                 </div>
               </li>
             );

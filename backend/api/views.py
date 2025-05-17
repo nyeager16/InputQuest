@@ -45,7 +45,6 @@ def user_preferences(request):
 
     elif request.method == 'PATCH':
         serializer = UserPreferencesSerializer(prefs, data=request.data, partial=True)
-        print(serializer)
         if serializer.is_valid():
             serializer.save()
             return Response({'status': 'success'})
@@ -224,7 +223,7 @@ def definitions(request, word_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MyVideosPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 12
     page_size_query_param = 'page_size'
     max_page_size = 100
 

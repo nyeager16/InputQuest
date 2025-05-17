@@ -129,3 +129,5 @@ class UserPreferences(models.Model):
     fsrs = models.BooleanField(default=True)
     vocab_filter = models.IntegerField(default=0)
     max_clip_length = models.IntegerField(default=300)
+    learn_hide_vocab = models.BooleanField(default=False)
+    grid_view = models.BooleanField(default=False)

@@ -18,7 +18,7 @@ async function refreshAccessToken(): Promise<string> {
   isRefreshing = true;
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/token/refresh/`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh: localStorage.getItem('refresh') }),

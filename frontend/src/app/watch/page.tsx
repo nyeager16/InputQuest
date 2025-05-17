@@ -2,34 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserPreferences, updateUserPreferences } from '@/lib/api';
+import { updateUserPreferences } from '@/lib/api';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 export default function WatchPage() {
   const router = useRouter();
-  
-  const [queueCI, setQueueCI] = useState<number>(70); // default while loading
-  const [maxClipLength, setMaxClipLength] = useState<number>(300); // default
-  const [loading, setLoading] = useState<boolean>(true);
+  const { data: userPrefs, refresh, setPrefs } = useUserPreferences();
+
+  const [queueCI, setQueueCI] = useState<number>(70);
+  const [maxClipLength, setMaxClipLength] = useState<number>(300);
 
   useEffect(() => {
-    async function fetchPreferences() {
-      try {
-        const data = await getUserPreferences();
-        setQueueCI(data.queue_CI ?? 70);
-        setMaxClipLength(data.max_clip_length ?? 300);
-      } catch (error) {
-        console.error('Failed to load user preferences', error);
-      } finally {
-        setLoading(false);
-      }
+    if (userPrefs) {
+      setQueueCI(userPrefs.queue_CI ?? 70);
+      setMaxClipLength(userPrefs.max_clip_length ?? 300);
     }
-
-    fetchPreferences();
-  }, []);
+  }, [userPrefs]);
 
   const handleUpdateQueue = async () => {
     try {
-      await updateUserPreferences({ queue_CI: queueCI, max_clip_length: maxClipLength });
+      const updatedPrefs = { queue_CI: queueCI, max_clip_length: maxClipLength };
+      await updateUserPreferences(updatedPrefs);
+      setPrefs((prev) => ({ ...prev, ...updatedPrefs })); // update local context
       router.push('/watch/queue');
     } catch (error) {
       console.error('Failed to update preferences', error);
@@ -37,7 +31,7 @@ export default function WatchPage() {
     }
   };
 
-  if (loading) {
+  if (!userPrefs) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-700 text-xl">Loading...</p>

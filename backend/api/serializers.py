@@ -8,30 +8,22 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Language
+        fields = ['id', 'name', 'abb']
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email']
 
 class UserPreferencesSerializer(serializers.ModelSerializer):
-    language = serializers.PrimaryKeyRelatedField(
-        queryset=Language.objects.all(),
-        required=False,
-        allow_null=True
-    )
+    language = LanguageSerializer(read_only=True)
 
     class Meta:
         model = UserPreferences
-        fields = [
-            'language',
-            'comprehension_level_min',
-            'comprehension_level_max',
-            'queue_CI',
-            'desired_retention',
-            'fsrs',
-            'vocab_filter',
-            'max_clip_length',
-        ]
+        fields = '__all__'
 
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -109,11 +101,6 @@ class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ['id', 'name', 'url']
-
-class LanguageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Language
-        fields = ['id', 'name']
 
 class VideoSerializer(serializers.ModelSerializer):
     channel = ChannelSerializer(read_only=True)
