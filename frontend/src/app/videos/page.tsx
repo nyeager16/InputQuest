@@ -2,16 +2,38 @@
 
 import { useState, useEffect, useRef } from 'react';
 import VideoList from '@/components/VideoList';
-import { VideoWithScore } from '@/lib/api';
+import VideoGrid from '@/components/VideoGrid';
+import { getVideos, VideoWithScore } from '@/lib/api';
 
 export default function VideosPage() {
   const [selected, setSelected] = useState<VideoWithScore | null>(null);
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(false);
   const [leftWidthPercent, setLeftWidthPercent] = useState(100);
+  const [useGrid, setUseGrid] = useState(false);
+  const [videos, setVideos] = useState<VideoWithScore[]>([]);
+  const [nextPage, setNextPage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isResizing = useRef(false);
+
+  useEffect(() => {
+    const fetchInitialVideos = async () => {
+      if (loading) return;
+      setLoading(true);
+      try {
+        const data = await getVideos();
+        setVideos(data.results);
+        setNextPage(data.next);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialVideos();
+  }, []);
 
   useEffect(() => {
     if (selected) {
@@ -64,8 +86,13 @@ export default function VideosPage() {
           }}
         >
           {/* Toolbar */}
-          <div className="flex justify-between items-center p-2">
-            <div />
+          <div className="flex justify-between items-center p-2 gap-2">
+            <button
+              onClick={() => setUseGrid((prev) => !prev)}
+              className="text-sm px-2 py-1 border rounded bg-white shadow"
+            >
+              {useGrid ? '📄 List View' : '🔲 Grid View'}
+            </button>
             {showRight && (
               <button
                 onClick={handleHideLeft}
@@ -78,10 +105,18 @@ export default function VideosPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <VideoList
-              selectedVideoId={selected?.video.id ?? null}
-              onSelect={setSelected}
-            />
+            {useGrid ? (
+              <VideoGrid
+                videos={videos}
+                selectedVideoId={selected?.video.id ?? null}
+                onSelect={setSelected}
+              />
+            ) : (
+              <VideoList
+                selectedVideoId={selected?.video.id ?? null}
+                onSelect={setSelected}
+              />
+            )}
           </div>
         </div>
       )}
