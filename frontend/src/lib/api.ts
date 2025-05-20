@@ -4,76 +4,72 @@ import { fetchWithAuth } from './fetchWithAuth';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getUserPreferences() {
-  const res = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch user preferences');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch user preferences');
+  return data;
 }
 
-export async function updateUserPreferences(data: {
+export async function updateUserPreferences(updates: {
   data: Partial<UserPreferences>
 }) {
-  const res = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'PATCH',
-    body: JSON.stringify(data),
+    body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error('Failed to update user preferences');
-  return await res.json();
+  if (!ok) throw new Error('Failed to update user preferences');
+  return data;
 }
 
 export async function getUserWords() {
-  const res = await fetchWithAuth(`${API_URL}/users/me/userwords/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch user words');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch user words');
+  return data;
 }
 
 export async function getUserWordIds() {
-  const res = await fetchWithAuth(`${API_URL}/users/me/userwords/ids/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/ids/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch user words');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch user words');
+  return data;
 }
 
 export async function getCommonWords() {
-  const res = await fetchWithAuth(`${API_URL}/words/common/100/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/words/common/100/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch common words');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch common words');
+  return data;
 }
 
 export async function getUserReviews() {
-  const res = await fetchWithAuth(`${API_URL}/users/me/reviews/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/reviews/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch user reviews');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch user reviews');
+  return data;
 }
 
 export async function submitReview(userWordId: number, rating: 0 | 1): Promise<void> {
-  const res = await fetchWithAuth(
-    `${API_URL}/userwords/${userWordId}/update/${rating}/`, {
+  const { ok } = await fetchWithAuth(
+    `${API_URL}/userwords/${userWordId}/update/${rating}/`,
+    {
       method: 'PATCH',
-    });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error?.detail || 'Failed to submit review');
-  }
+    }
+  );
+  if (!ok) throw new Error('Failed to submit review');
 }
 
 export async function addUserWord(wordId: number) {
-  const res = await fetchWithAuth(`${API_URL}/users/me/userwords/${wordId}/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/${wordId}/`, {
     method: 'POST',
   });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to add word');
-  }
-  return await res.json().catch(() => ({}));
+  if (!ok) throw new Error('Failed to add word');
+  return data;
 }
 
 export async function signupUser(formData: {
@@ -142,31 +138,33 @@ export async function logoutUser(refreshToken: string) {
 }
 
 export async function getDefinition(wordId: number) {
-  const res = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch definition');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch definition');
+  return data;
 }
 
 export async function saveDefinition(wordId: number, text: string) {
-  const res = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
-  if (!res.ok) throw new Error('Failed to save definition');
-  return await res.json();
+
+  if (!ok) throw new Error('Failed to save definition');
+  return data;
 }
 
 export async function deleteUserWords(ids: number[]) {
-  const res = await fetchWithAuth(`${API_URL}/userwords/delete/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/userwords/delete/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids }),
-  },);
-  if (!res.ok) throw new Error('Failed to save definition');
-  return await res.json();
+  });
+
+  if (!ok) throw new Error('Failed to save definition');
+  return data;
 }
 
 type Video = {
@@ -207,16 +205,16 @@ export async function getVideos({
     url += `?${queryParams.toString()}`;
   }
 
-  const res = await fetchWithAuth(url);
-  if (!res.ok) throw new Error('Failed to fetch videos');
-  return await res.json();
+  const { data, ok } = await fetchWithAuth(url);
+  if (!ok) throw new Error('Failed to fetch videos');
+  return data;
 }
 
 
 export async function getVideoWords(videoId: number) {
-  const res = await fetchWithAuth(`${API_URL}/words/video/${videoId}/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/words/video/${videoId}/`, {
     method: 'GET',
   });
-  if (!res.ok) throw new Error('Failed to fetch video words');
-  return await res.json();
+  if (!ok) throw new Error('Failed to fetch video words');
+  return data;
 }

@@ -1,5 +1,6 @@
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
+const inFlightRequests = new Map<string, Promise<{ data: any; ok: boolean; status: number }>>();
 
 function subscribeTokenRefresh(cb: (token: string) => void) {
   refreshSubscribers.push(cb);
@@ -12,10 +13,8 @@ function onRefreshed(token: string) {
 
 async function refreshAccessToken(): Promise<string> {
   const refreshToken = localStorage.getItem('refresh');
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-  
+  if (!refreshToken) throw new Error('No refresh token available');
+
   if (isRefreshing) {
     return new Promise(resolve => subscribeTokenRefresh(resolve));
   }
@@ -26,12 +25,10 @@ async function refreshAccessToken(): Promise<string> {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/token/refresh/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh: localStorage.getItem('refresh') }),
+      body: JSON.stringify({ refresh: refreshToken }),
     });
 
-    if (!res.ok) {
-      throw new Error('Failed to refresh token');
-    }
+    if (!res.ok) throw new Error('Failed to refresh token');
 
     const data = await res.json();
     localStorage.setItem('access', data.access);
@@ -45,39 +42,52 @@ async function refreshAccessToken(): Promise<string> {
 export async function fetchWithAuth(
   input: RequestInfo,
   init: RequestInit = {}
-): Promise<Response> {
-  let accessToken = localStorage.getItem('access');
+): Promise<{ data: any; ok: boolean; status: number }> {
+  const key = typeof input === 'string' ? input : JSON.stringify(input);
 
-  const authHeaders = accessToken
-    ? { Authorization: `Bearer ${accessToken}` }
-    : {};
-
-  let response = await fetch(input, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-      ...authHeaders,
-    },
-  });
-
-  if (response.status === 401) {
-    try {
-      accessToken = await refreshAccessToken();
-
-      response = await fetch(input, {
-        ...init,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(init.headers || {}),
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-    } catch (err) {
-      console.error('Token refresh failed', err);
-      throw err;
-    }
+  if (inFlightRequests.has(key)) {
+    return inFlightRequests.get(key)!;
   }
 
-  return response;
+  const fetchPromise = (async () => {
+    let accessToken = localStorage.getItem('access');
+    const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+
+    let response = await fetch(input, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init.headers || {}),
+        ...authHeaders,
+      },
+    });
+
+    if (response.status === 401) {
+      try {
+        accessToken = await refreshAccessToken();
+        response = await fetch(input, {
+          ...init,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(init.headers || {}),
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+      } catch (err) {
+        console.error('Token refresh failed', err);
+        throw err;
+      }
+    }
+
+    const data = await response.json();
+    return { data, ok: response.ok, status: response.status };
+  })();
+
+  inFlightRequests.set(key, fetchPromise);
+
+  try {
+    return await fetchPromise;
+  } finally {
+    inFlightRequests.delete(key);
+  }
 }
