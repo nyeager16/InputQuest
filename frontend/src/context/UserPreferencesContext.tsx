@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getUserPreferences, updateUserPreferences } from '@/lib/api';
 
-type UserPreferences = {
+export type UserPreferences = {
   id: number;
   language: { id: number; name: string; abb: string };
   comprehension_level_min: number;
@@ -24,6 +24,7 @@ type ContextType = {
   refresh: () => void;
   setPrefs: React.Dispatch<React.SetStateAction<UserPreferences | null>>;
   updatePref: (updates: Partial<UserPreferences>) => Promise<void>;
+  clearPrefs: () => void;
 };
 
 const UserPreferencesContext = createContext<ContextType>({
@@ -31,6 +32,7 @@ const UserPreferencesContext = createContext<ContextType>({
   refresh: () => {},
   setPrefs: () => {},
   updatePref: async () => {},
+  clearPrefs: () => {},
 });
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
@@ -49,21 +51,24 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     if (!userPrefs) return;
     try {
       await updateUserPreferences(updates);
-      setUserPrefs((prev) => prev ? { ...prev, ...updates } : prev);
+      setUserPrefs((prev) => (prev ? { ...prev, ...updates } : prev));
     } catch (e) {
       console.error('Failed to update preferences', e);
     }
   };
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const clearPrefs = () => {
+    setUserPrefs(null);
+  };
 
   return (
-    <UserPreferencesContext.Provider value={{ data: userPrefs, refresh, setPrefs: setUserPrefs, updatePref }}>
+    <UserPreferencesContext.Provider
+      value={{ data: userPrefs, refresh, setPrefs: setUserPrefs, updatePref, clearPrefs }}
+    >
       {children}
     </UserPreferencesContext.Provider>
   );
 }
+
 
 export const useUserPreferences = () => useContext(UserPreferencesContext);

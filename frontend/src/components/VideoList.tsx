@@ -5,9 +5,11 @@ import ScoreBox from './ScoreBox';
 type Props = {
   selectedVideoId: number | null;
   onSelect: (video: VideoWithScore) => void;
+  comprehensionMin: number;
+  comprehensionMax: number;
 };
 
-export default function VideoList({ selectedVideoId, onSelect }: Props) {
+export default function VideoList({ selectedVideoId, onSelect, comprehensionMin, comprehensionMax }: Props) {
   const [videos, setVideos] = useState<VideoWithScore[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,11 @@ export default function VideoList({ selectedVideoId, onSelect }: Props) {
     if (loading) return;
     setLoading(true);
     try {
-      const data = await getVideos(nextPage ?? undefined);
+      const data = await getVideos({
+        nextPageUrl: nextPage,
+        comprehensionMin,
+        comprehensionMax,
+      });
       setVideos((prev) => {
         const existingIds = new Set(prev.map((v) => v.video.id));
         const newUnique = data.results.filter((v) => !existingIds.has(v.video.id));
@@ -34,6 +40,12 @@ export default function VideoList({ selectedVideoId, onSelect }: Props) {
   useEffect(() => {
     fetchVideos();
   }, []);
+
+  useEffect(() => {
+    setVideos([]); 
+    setNextPage(null);
+    fetchVideos();
+  }, [comprehensionMin, comprehensionMax]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

@@ -1,11 +1,11 @@
-from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view, permission_classes
 from django.utils.timezone import now
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Count, F, Value
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from fsrs import Scheduler, Rating
 from .models import (
@@ -106,7 +106,17 @@ def user_words_del(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_user_words(request):
-    user_words = UserWord.objects.filter(user=request.user)
+    try:
+        prefs = UserPreferences.objects.get(user=request.user)
+        vocab_filter = prefs.vocab_filter
+    except UserPreferences.DoesNotExist:
+        vocab_filter = 0
+
+    if vocab_filter == 0: # Alphabetical Order
+        user_words = UserWord.objects.filter(user=request.user).order_by('word__text')
+    else: # Recently Added
+        user_words = UserWord.objects.filter(user=request.user).order_by('-id')
+    
     serializer = UserWordSerializer(user_words, many=True)
     return Response(serializer.data)
 
@@ -228,17 +238,28 @@ class MyVideosPagination(PageNumberPagination):
     max_page_size = 100
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def get_videos(request):
     paginator = MyVideosPagination()
 
     if request.user.is_authenticated:
         prefs, _ = UserPreferences.objects.get_or_create(user=request.user)
 
-        # User-specific videos, ordered by score
+        # Use query params if provided, else fallback to user preferences
+        comprehension_min = request.query_params.get('comprehension_min')
+        comprehension_max = request.query_params.get('comprehension_max')
+
+        try:
+            comprehension_min = int(comprehension_min) if comprehension_min is not None else prefs.comprehension_level_min
+            comprehension_max = int(comprehension_max) if comprehension_max is not None else prefs.comprehension_level_max
+        except ValueError:
+            return Response({'detail': 'Invalid comprehension values.'}, status=400)
+
         user_videos = UserVideo.objects.filter(
             user=request.user,
-            video__language=prefs.language
+            video__language=prefs.language,
+            score__gte=comprehension_min,
+            score__lte=comprehension_max
         ).select_related('video', 'video__channel', 'video__language').order_by('-score')
 
         if user_videos.exists():
@@ -267,8 +288,50 @@ def get_videos(request):
     return paginator.get_paginated_response(serialized_page)
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def video_words(request, video_id):
+    word_count = 25
+    try:
+        video = Video.objects.get(id=video_id)
+    except Video.DoesNotExist:
+        return Response({'error': 'Video not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    word_instances = (
+        WordInstance.objects
+        .filter(video=video)
+        .select_related('word__root')
+        .annotate(root_word_id=Coalesce('word__root_id', 'word_id'))
+    )
 
-    return
+    # Exclude known root words for authenticated users
+    if request.user.is_authenticated:
+        known_word_ids = (
+            UserWord.objects
+            .filter(user=request.user)
+            .select_related('word__root')
+            .annotate(root_id=Coalesce('word__root_id', 'word_id'))
+            .values_list('root_id', flat=True)
+        )
+        word_instances = word_instances.exclude(
+            word__root_id__in=known_word_ids
+        ).exclude(
+            word_id__in=known_word_ids
+        )
+
+    # Count frequencies of root words efficiently in the DB
+    root_counts = (
+        word_instances
+        .values('root_word_id')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:word_count]
+    )
+
+    root_word_ids = [entry['root_word_id'] for entry in root_counts]
+
+    # Fetch and map words by ID
+    words = Word.objects.filter(id__in=root_word_ids)
+    word_map = {word.id: word for word in words}
+    ordered_words = [word_map[wid] for wid in root_word_ids if wid in word_map]
+
+    serializer = WordSerializer(ordered_words, many=True)
+    return Response(serializer.data)

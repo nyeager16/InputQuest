@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Checkbox from '@/components/Checkbox';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 type WordCard = {
   word: {
@@ -27,6 +28,8 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
   const [editMode, setEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+  const { data: userPrefs, updatePref } = useUserPreferences();
+
   const toggleEditMode = () => {
     setEditMode((prev) => !prev);
     setSelectedIds(new Set());
@@ -48,15 +51,33 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
     setEditMode(false);
   };
 
+  const handleToggleFilter = async () => {
+    if (!userPrefs) return;
+    const newFilter = userPrefs.vocab_filter === 0 ? 1 : 0;
+    try {
+      await updatePref({ vocab_filter: newFilter });
+    } catch (error) {
+      console.error('Failed to toggle filter:', error);
+    }
+  };
+
   return (
     <div className="w-64 h-full overflow-y-auto p-2 bg-gray-100">
-      <div className="flex justify-between mb-2">
+      <div className="flex justify-between items-center mb-2 gap-2">
         <button
           className="text-sm text-white bg-blue-500 px-3 py-1 rounded hover:bg-blue-600"
           onClick={toggleEditMode}
         >
           {editMode ? 'Cancel' : 'Edit'}
         </button>
+
+        <button
+          className="text-sm text-white bg-green-500 px-3 py-1 rounded hover:bg-green-600"
+          onClick={handleToggleFilter}
+        >
+          {userPrefs?.vocab_filter === 0 ? 'A→Z' : 'Recent'}
+        </button>
+
         <button
           className={`text-sm px-3 py-1 rounded ${
             selectedIds.size > 0

@@ -3,43 +3,31 @@
 import { useState, useEffect, useRef } from 'react';
 import VideoList from '@/components/VideoList';
 import VideoGrid from '@/components/VideoGrid';
-import { getVideos, VideoWithScore, updateUserPreferences } from '@/lib/api';
+import { VideoWithScore, getVideoWords } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
+import VideoWordTags from '@/components/VideoWordTags';
+import BoundedNumberRangeInput from '@/components/BoundedNumberRangeInput';
 
 export default function VideosPage() {
-  const { data: userPrefs, setPrefs } = useUserPreferences();
+  const { data: userPrefs, updatePref } = useUserPreferences();
   const [selected, setSelected] = useState<VideoWithScore | null>(null);
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(false);
   const [userResized, setUserResized] = useState(false);
   const [leftWidthPercent, setLeftWidthPercent] = useState(100);
+  const [comprehensionMin, setComprehensionMin] = useState(0);
+  const [comprehensionMax, setComprehensionMax] = useState(100);
   const [useGrid, setUseGrid] = useState(false);
-  const [videos, setVideos] = useState<VideoWithScore[]>([]);
-  const [nextPage, setNextPage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [videoWords, setVideoWords] = useState<string[]>([]);
+  const [videoWordsLoading, setVideoWordsLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isResizing = useRef(false);
 
   useEffect(() => {
-    const fetchInitialVideos = async () => {
-      if (loading) return;
-      setLoading(true);
-      try {
-        const data = await getVideos();
-        setVideos(data.results);
-        setNextPage(data.next);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInitialVideos();
-  }, []);
-
-  useEffect(() => {
     if (userPrefs) {
+      setComprehensionMin(userPrefs.comprehension_level_min);
+      setComprehensionMax(userPrefs.comprehension_level_max);
       setUseGrid(userPrefs.grid_view);
     }
   }, [userPrefs]);
@@ -56,6 +44,27 @@ export default function VideosPage() {
     } else {
       setShowRight(false);
     }
+  }, [selected]);
+
+  useEffect(() => {
+    const fetchWords = async () => {
+      if (selected) {
+        setVideoWordsLoading(true);
+        try {
+          const wordsData = await getVideoWords(selected.video.id);
+          const words = wordsData.map((w: { text: string }) => w.text);
+          setVideoWords(words);
+        } catch (err) {
+          console.error('Failed to fetch words', err);
+          setVideoWords([]);
+        } finally {
+          setVideoWordsLoading(false);
+        }
+      } else {
+        setVideoWords([]);
+      }
+    };
+    fetchWords();
   }, [selected]);
 
   const handleHideLeft = () => {
@@ -97,38 +106,54 @@ export default function VideosPage() {
           }}
         >
           {/* Toolbar */}
-          <div className="flex justify-end items-center p-2 gap-2">
-            <button
-              onClick={async () => {
-                const newGridState = !useGrid;
-                setUseGrid(newGridState); // Optimistic UI
-                try {
-                  await updateUserPreferences({ grid_view: newGridState });
-                  setPrefs(prev => ({ ...prev, grid_view: newGridState })); // Update global context
-                } catch (err) {
-                  console.error('Failed to update grid_view', err);
-                  setUseGrid(!newGridState); // Rollback if needed
+          <div className="flex justify-between items-center p-2 gap-2 w-full">
+            {/* Comprehension Range Filter */}
+            <BoundedNumberRangeInput
+              minBound={0}
+              maxBound={100}
+              minValue={comprehensionMin}
+              maxValue={comprehensionMax}
+              onChange={({ min, max }) => {
+                setComprehensionMin(min);
+                setComprehensionMax(max);
+                if (min !== comprehensionMin || max !== comprehensionMax) {
+                  updatePref({ comprehension_level_min: min, comprehension_level_max: max });
                 }
               }}
-              className="text-sm px-2 py-1 border rounded bg-white shadow"
-            >
-              {useGrid ? 'List View' : 'Grid View'}
-            </button>
-            {showRight && (
+            />
+
+            {/* View Toggle + Hide */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={handleHideLeft}
-                disabled={!selected}
-                className="text-sm px-2 py-1 border rounded bg-white shadow disabled:opacity-50"
+                onClick={async () => {
+                  const newGridState = !useGrid;
+                  setUseGrid(newGridState);
+                  try {
+                    await updatePref({ grid_view: newGridState });
+                  } catch (err) {
+                    console.error('Failed to update grid_view', err);
+                    setUseGrid(!newGridState);
+                  }
+                }}
+                className="text-sm px-2 py-1 border rounded bg-white shadow"
               >
-                Hide
+                {useGrid ? 'List View' : 'Grid View'}
               </button>
-            )}
+              {showRight && (
+                <button
+                  onClick={handleHideLeft}
+                  disabled={!selected}
+                  className="text-sm px-2 py-1 border rounded bg-white shadow disabled:opacity-50"
+                >
+                  Hide
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {useGrid ? (
               <VideoGrid
-                videos={videos}
                 selectedVideoId={selected?.video.id ?? null}
                 onSelect={(video) => {
                   if (selected?.video.id === video.video.id) {
@@ -139,6 +164,8 @@ export default function VideosPage() {
                     setShowRight(true);       // Ensure right panel is visible
                   }
                 }}
+                comprehensionMin={comprehensionMin}
+                comprehensionMax={comprehensionMax}
               />
             ) : (
               <VideoList
@@ -152,6 +179,8 @@ export default function VideosPage() {
                     setShowRight(true);       // Ensure right panel is visible
                   }
                 }}
+                comprehensionMin={comprehensionMin}
+                comprehensionMax={comprehensionMax}
               />
             )}
           </div>
@@ -193,9 +222,32 @@ export default function VideosPage() {
                   ></iframe>
                 </div>
                 <h2 className="text-base font-semibold">{selected.video.title}</h2>
-                <p className="text-sm text-gray-600">
-                  Channel: {selected.video.channel.name}
-                </p>
+                {videoWordsLoading ? (
+                  <div className="flex justify-center items-center py-6">
+                    <svg
+                      className="animate-spin h-5 w-5 text-gray-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                  </div>
+                ) : (
+                  <VideoWordTags words={videoWords} />
+                )}
               </div>
             ) : (
               <p>Select a video from the list</p>

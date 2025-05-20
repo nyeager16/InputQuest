@@ -11,6 +11,11 @@ function onRefreshed(token: string) {
 }
 
 async function refreshAccessToken(): Promise<string> {
+  const refreshToken = localStorage.getItem('refresh');
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+  
   if (isRefreshing) {
     return new Promise(resolve => subscribeTokenRefresh(resolve));
   }

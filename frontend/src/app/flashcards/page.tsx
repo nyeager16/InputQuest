@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import FlashcardList from '@/components/FlashcardList';
 import { getUserWords, getDefinition, saveDefinition, deleteUserWords } from '@/lib/api';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 export default function HomePage() {
   const [cards, setCards] = useState<any[]>([]);
@@ -11,9 +12,11 @@ export default function HomePage() {
   const [loadingDef, setLoadingDef] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { data: userPrefs } = useUserPreferences();
+
   useEffect(() => {
     loadWords();
-  }, []);
+  }, [userPrefs?.vocab_filter]);
 
   const loadWords = async () => {
     try {

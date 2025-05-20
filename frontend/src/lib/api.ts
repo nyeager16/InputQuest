@@ -1,3 +1,4 @@
+import type { UserPreferences } from '@/context/UserPreferencesContext';
 import { fetchWithAuth } from './fetchWithAuth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -11,8 +12,7 @@ export async function getUserPreferences() {
 }
 
 export async function updateUserPreferences(data: {
-  queue_CI: number;
-  max_clip_length: number;
+  data: Partial<UserPreferences>
 }) {
   const res = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'PATCH',
@@ -126,6 +126,21 @@ export async function loginUser(formData: {
   return data;
 }
 
+export async function logoutUser(refreshToken: string) {
+  const res = await fetch(`${API_URL}/token/blacklist/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh: refreshToken }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Logout failed');
+  }
+
+  return true;
+}
+
 export async function getDefinition(wordId: number) {
   const res = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
     method: 'GET',
@@ -173,12 +188,30 @@ export type PaginatedVideosResponse = {
   count: number;
 };
 
-export async function getVideos(nextPageUrl?: string): Promise<PaginatedVideosResponse> {
-  const url = nextPageUrl ?? `${API_URL}/videos/`;
+export async function getVideos({
+  nextPageUrl,
+  comprehensionMin,
+  comprehensionMax,
+}: {
+  nextPageUrl?: string;
+  comprehensionMin?: number;
+  comprehensionMax?: number;
+} = {}): Promise<PaginatedVideosResponse> {
+  let url = nextPageUrl ?? `${API_URL}/videos/`;
+
+  const queryParams = new URLSearchParams();
+
+  if (!nextPageUrl && comprehensionMin !== undefined && comprehensionMax !== undefined) {
+    queryParams.append('comprehension_min', comprehensionMin.toString());
+    queryParams.append('comprehension_max', comprehensionMax.toString());
+    url += `?${queryParams.toString()}`;
+  }
+
   const res = await fetchWithAuth(url);
   if (!res.ok) throw new Error('Failed to fetch videos');
   return await res.json();
 }
+
 
 export async function getVideoWords(videoId: number) {
   const res = await fetchWithAuth(`${API_URL}/words/video/${videoId}/`, {
