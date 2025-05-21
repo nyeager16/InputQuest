@@ -47,6 +47,10 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     }
   }, []);
 
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
   const updatePref = async (updates: Partial<UserPreferences>) => {
     if (!userPrefs) return;
     try {
@@ -69,6 +73,5 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     </UserPreferencesContext.Provider>
   );
 }
-
 
 export const useUserPreferences = () => useContext(UserPreferencesContext);

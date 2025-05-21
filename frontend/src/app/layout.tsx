@@ -24,10 +24,8 @@ export default function RootLayout({
       <body className={inter.variable}>
         <UserPreferencesProvider>
           <div className="flex min-h-screen">
-            {/* Sidebar can now use context */}
             <Sidebar />
-
-            {/* Main Content - Scrollable */}
+            {/* Main Content */}
             <main className="flex-1 overflow-y-auto h-screen">
               {children}
             </main>
