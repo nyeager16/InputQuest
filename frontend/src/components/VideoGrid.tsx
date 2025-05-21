@@ -1,70 +1,15 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { getVideos, VideoWithScore } from '@/lib/api';
+import { VideoWithScore } from '@/lib/api';
 import ScoreBox from './ScoreBox';
 
 type Props = {
+  videos: VideoWithScore[];
+  loading: boolean;
   selectedVideoId: number | null;
   onSelect: (video: VideoWithScore) => void;
-  comprehensionMin: number;
-  comprehensionMax: number;
+  sentinelRef: React.RefObject<HTMLDivElement>;
 };
 
-export default function VideoGrid({ selectedVideoId, onSelect, comprehensionMin, comprehensionMax }: Props) {
-  const [videos, setVideos] = useState<VideoWithScore[]>([]);
-  const [nextPage, setNextPage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  const fetchVideos = useCallback(async () => {
-    if (loading) return;
-    setLoading(true);
-    try {
-      const data = await getVideos({
-        nextPageUrl: nextPage,
-        comprehensionMin,
-        comprehensionMax,
-      });
-      setVideos((prev) => {
-        const existingIds = new Set(prev.map((v) => v.video.id));
-        const newUnique = data.results.filter((v) => !existingIds.has(v.video.id));
-        return [...prev, ...newUnique];
-      });
-      setNextPage(data.next);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [nextPage, loading]);
-
-  useEffect(() => {
-    fetchVideos();
-  }, []);
-
-  useEffect(() => {
-    setVideos([]);
-    setNextPage(null);
-    fetchVideos();
-  }, [comprehensionMin, comprehensionMax]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && nextPage) {
-          fetchVideos();
-        }
-      },
-      { rootMargin: '100px' }
-    );
-
-    const sentinel = observerRef.current;
-    if (sentinel) observer.observe(sentinel);
-
-    return () => {
-      if (sentinel) observer.unobserve(sentinel);
-    };
-  }, [nextPage, fetchVideos]);
-
+export default function VideoGrid({ videos, loading, selectedVideoId, onSelect, sentinelRef }: Props) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       {videos.map((item) => {
@@ -98,7 +43,7 @@ export default function VideoGrid({ selectedVideoId, onSelect, comprehensionMin,
           </div>
         );
       })}
-      <div ref={observerRef} className="col-span-full" />
+      <div ref={sentinelRef} className="col-span-full" />
       {loading && (
         <p className="col-span-full text-center py-4 text-sm text-gray-500">
           Loading more videos...

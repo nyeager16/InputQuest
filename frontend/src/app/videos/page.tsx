@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import VideoList from '@/components/VideoList';
 import VideoGrid from '@/components/VideoGrid';
-import { VideoWithScore, getVideoWords } from '@/lib/api';
+import { VideoWithScore, getVideoWords, getVideos } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import VideoWordTags from '@/components/VideoWordTags';
 import BoundedNumberRangeInput from '@/components/BoundedNumberRangeInput';
@@ -21,6 +21,11 @@ export default function VideosPage() {
   const [videoWords, setVideoWords] = useState<string[]>([]);
   const [videoWordsLoading, setVideoWordsLoading] = useState(false);
 
+  const [videos, setVideos] = useState<VideoWithScore[]>([]);
+  const [nextPage, setNextPage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isResizing = useRef(false);
 
@@ -31,6 +36,50 @@ export default function VideosPage() {
       setUseGrid(userPrefs.grid_view);
     }
   }, [userPrefs]);
+
+  const fetchVideos = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const data = await getVideos({
+        nextPageUrl: nextPage,
+        comprehensionMin,
+        comprehensionMax,
+      });
+      setVideos((prev) => {
+        const existingIds = new Set(prev.map((v) => v.video.id));
+        const newUnique = data.results.filter((v) => !existingIds.has(v.video.id));
+        return [...prev, ...newUnique];
+      });
+      setNextPage(data.next);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [nextPage, comprehensionMin, comprehensionMax, loading]);
+
+  useEffect(() => {
+    setVideos([]);
+    setNextPage(null);
+    fetchVideos();
+  }, [comprehensionMin, comprehensionMax]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && nextPage) {
+          fetchVideos();
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    const sentinel = sentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [nextPage, fetchVideos]);
 
   useEffect(() => {
     if (selected) {
@@ -154,33 +203,19 @@ export default function VideosPage() {
           <div className="flex-1 overflow-y-auto">
             {useGrid ? (
               <VideoGrid
+                videos={videos}
+                loading={loading}
                 selectedVideoId={selected?.video.id ?? null}
-                onSelect={(video) => {
-                  if (selected?.video.id === video.video.id) {
-                    setSelected(null);        // Deselect the video
-                    setShowRight(false);      // Hide the right panel
-                  } else {
-                    setSelected(video);       // Select new video
-                    setShowRight(true);       // Ensure right panel is visible
-                  }
-                }}
-                comprehensionMin={comprehensionMin}
-                comprehensionMax={comprehensionMax}
+                onSelect={setSelected}
+                sentinelRef={sentinelRef}
               />
             ) : (
               <VideoList
+                videos={videos}
+                loading={loading}
                 selectedVideoId={selected?.video.id ?? null}
-                onSelect={(video) => {
-                  if (selected?.video.id === video.video.id) {
-                    setSelected(null);        // Deselect the video
-                    setShowRight(false);      // Hide the right panel
-                  } else {
-                    setSelected(video);       // Select new video
-                    setShowRight(true);       // Ensure right panel is visible
-                  }
-                }}
-                comprehensionMin={comprehensionMin}
-                comprehensionMax={comprehensionMax}
+                onSelect={setSelected}
+                sentinelRef={sentinelRef}
               />
             )}
           </div>
