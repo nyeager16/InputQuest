@@ -201,3 +201,11 @@ export async function getVideoWords(videoId: number) {
   if (!ok) throw new Error('Failed to fetch video words');
   return data;
 }
+
+export async function getQuestions(videoId: number) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/questions/video/${videoId}/`, {
+    method: 'GET',
+  });
+  if (!ok) throw new Error('Failed to fetch video questions');
+  return data;
+}
