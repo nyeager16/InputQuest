@@ -186,30 +186,13 @@ export type PaginatedVideosResponse = {
   count: number;
 };
 
-export async function getVideos({
-  nextPageUrl,
-  comprehensionMin,
-  comprehensionMax,
-}: {
-  nextPageUrl?: string;
-  comprehensionMin?: number;
-  comprehensionMax?: number;
-} = {}): Promise<PaginatedVideosResponse> {
-  let url = nextPageUrl ?? `${API_URL}/videos/`;
-
-  const queryParams = new URLSearchParams();
-
-  if (!nextPageUrl && comprehensionMin !== undefined && comprehensionMax !== undefined) {
-    queryParams.append('comprehension_min', comprehensionMin.toString());
-    queryParams.append('comprehension_max', comprehensionMax.toString());
-    url += `?${queryParams.toString()}`;
-  }
+export async function getVideos(queryString: string): Promise<PaginatedVideosResponse> {
+  const url = `${API_URL}/videos/${queryString}`;
 
   const { data, ok } = await fetchWithAuth(url);
   if (!ok) throw new Error('Failed to fetch videos');
   return data;
 }
-
 
 export async function getVideoWords(videoId: number) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/words/video/${videoId}/`, {

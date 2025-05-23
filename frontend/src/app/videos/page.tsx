@@ -34,18 +34,33 @@ export default function VideosPage() {
       setComprehensionMin(userPrefs.comprehension_level_min);
       setComprehensionMax(userPrefs.comprehension_level_max);
       setUseGrid(userPrefs.grid_view);
+    } else if (userPrefs === null) {
+      setComprehensionMin(0);
+      setComprehensionMax(100);
+      setUseGrid(false);
     }
   }, [userPrefs]);
 
   const fetchVideos = useCallback(async () => {
     if (loading) return;
+
+    const params = new URLSearchParams();
+
+    params.set('comprehension_min', comprehensionMin.toString());
+    params.set('comprehension_max', comprehensionMax.toString());
+
+    if (nextPage) {
+      const pageMatch = nextPage.match(/page=(\d+)/);
+      if (pageMatch) {
+        params.set('page', pageMatch[1]);
+      }
+    }
+
+    const queryString = `?${params.toString()}`;
+
     setLoading(true);
     try {
-      const data = await getVideos({
-        nextPageUrl: nextPage,
-        comprehensionMin,
-        comprehensionMax,
-      });
+      const data = await getVideos(queryString);
       setVideos((prev) => {
         const existingIds = new Set(prev.map((v) => v.video.id));
         const newUnique = data.results.filter((v) => !existingIds.has(v.video.id));
@@ -68,7 +83,7 @@ export default function VideosPage() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && nextPage) {
+        if (entries[0].isIntersecting) {
           fetchVideos();
         }
       },
@@ -79,7 +94,7 @@ export default function VideosPage() {
     return () => {
       if (sentinel) observer.unobserve(sentinel);
     };
-  }, [nextPage, fetchVideos]);
+  }, [fetchVideos]);
 
   useEffect(() => {
     if (selected) {
@@ -163,9 +178,10 @@ export default function VideosPage() {
               minValue={comprehensionMin}
               maxValue={comprehensionMax}
               onChange={({ min, max }) => {
+                const changed = min !== comprehensionMin || max !== comprehensionMax;
                 setComprehensionMin(min);
                 setComprehensionMax(max);
-                if (min !== comprehensionMin || max !== comprehensionMax) {
+                if (changed) {
                   updatePref({ comprehension_level_min: min, comprehension_level_max: max });
                 }
               }}

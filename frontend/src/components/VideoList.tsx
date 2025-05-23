@@ -6,7 +6,7 @@ type Props = {
   loading: boolean;
   selectedVideoId: number | null;
   onSelect: (video: VideoWithScore) => void;
-  sentinelRef: React.RefObject<HTMLDivElement>;
+  sentinelRef: React.RefObject<HTMLDivElement | null>;
 };
 
 export default function VideoList({ videos, loading, selectedVideoId, onSelect, sentinelRef }: Props) {
