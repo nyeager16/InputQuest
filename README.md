@@ -1,10 +1,10 @@
-# InputQuest: Learn Language with Comprehensible Input
+# InputQuest: Learn with Comprehensible Input
 
 **InputQuest** is a web-based language learning platform built for learners of the **Polish language**, leveraging the **Comprehensible Input** approach. The app intelligently integrates spaced repetition, YouTube-sourced content, and AI-generated comprehension questions to help users build lasting vocabulary and real-world fluency.
 
 ---
 
-## 🚀 Features
+## Features
 
 - **Vocabulary Tracking & Retention**  
   Uses a **Spaced Repetition System (SRS)** to strengthen long-term memory of vocabulary.
@@ -68,7 +68,7 @@ poetry run python manage.py runserver
 
 ---
 
-## 💻 Frontend Setup (Next.js + Tailwind CSS)
+## Frontend Setup (Next.js + Tailwind CSS)
 
 ### Prerequisites
 - Node.js 18+
@@ -88,10 +88,10 @@ npm run dev
 
 ---
 
-## 📜 Disclaimer
+## Disclaimer
 
 This project is shared for review and evaluation purposes only. It may not be copied, modified, or used in any way without prior permission.
 
-## 📜 License
+## License
 
 No license is included. For usage inquiries, please contact Nathan Yeager at nyeager16@gmail.com.
