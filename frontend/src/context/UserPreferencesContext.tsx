@@ -21,6 +21,7 @@ export type UserPreferences = {
 
 type ContextType = {
   data: UserPreferences | null;
+  loading: boolean;
   refresh: () => void;
   setPrefs: React.Dispatch<React.SetStateAction<UserPreferences | null>>;
   updatePref: (updates: Partial<UserPreferences>) => Promise<void>;
@@ -29,6 +30,7 @@ type ContextType = {
 
 const UserPreferencesContext = createContext<ContextType>({
   data: null,
+  loading: true,
   refresh: () => {},
   setPrefs: () => {},
   updatePref: async () => {},
@@ -37,13 +39,18 @@ const UserPreferencesContext = createContext<ContextType>({
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   const refresh = useCallback(async () => {
+    setLoading(true); // Start loading
     try {
       const data = await getUserPreferences();
       setUserPrefs(data);
     } catch (e) {
       console.error('Failed to refresh preferences', e);
+      setUserPrefs(null); // Treat unauthenticated users gracefully
+    } finally {
+      setLoading(false); // Done loading
     }
   }, []);
 
@@ -54,7 +61,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   const updatePref = async (updates: Partial<UserPreferences>) => {
     if (!userPrefs) return;
     try {
-      await updateUserPreferences(updates);
+      await updateUserPreferences({ data: updates });
       setUserPrefs((prev) => (prev ? { ...prev, ...updates } : prev));
     } catch (e) {
       console.error('Failed to update preferences', e);
@@ -67,7 +74,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
 
   return (
     <UserPreferencesContext.Provider
-      value={{ data: userPrefs, refresh, setPrefs: setUserPrefs, updatePref, clearPrefs }}
+      value={{ data: userPrefs, loading, refresh, setPrefs: setUserPrefs, updatePref, clearPrefs }}
     >
       {children}
     </UserPreferencesContext.Provider>
