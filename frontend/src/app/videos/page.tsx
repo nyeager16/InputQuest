@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import VideoList from '@/components/VideoList';
 import VideoGrid from '@/components/VideoGrid';
-import { VideoWithScore, getVideoWords, getVideos, getQuestions } from '@/lib/api';
+import { VideoWithScore, getVideoWords, getVideos, getQuestions, submitAnswers } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import VideoWordTags from '@/components/VideoWordTags';
 import BoundedNumberRangeInput from '@/components/BoundedNumberRangeInput';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function VideosPage() {
   const { data: userPrefs, updatePref, loading: prefsLoading } = useUserPreferences();
@@ -25,7 +26,11 @@ export default function VideosPage() {
   const [readyToFetch, setReadyToFetch] = useState(false);
 
   const [questionLoading, setQuestionLoading] = useState(false);
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<{ id: number; text: string; start: number; end: number }[]>([]);
+  const [answers, setAnswers] = useState<{ [id: number]: string }>({});
+
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ [id: number]: string }>({});
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -123,6 +128,8 @@ export default function VideosPage() {
     } else {
       setShowRight(false);
     }
+    setQuestions([]);
+    setAnswers({});
   }, [selected]);
 
   useEffect(() => {
@@ -179,7 +186,8 @@ export default function VideosPage() {
     setQuestionLoading(true);
     try {
       const q = await getQuestions(selected.video.id);
-      setQuestions(q); // assuming `q` is a string[]; adjust if needed
+      setQuestions(q);
+      setAnswers({});
     } catch (err) {
       console.error('Failed to fetch questions', err);
       setQuestions([]);
@@ -324,16 +332,99 @@ export default function VideosPage() {
                     ) : (
                       <>
                         <VideoWordTags words={videoWords} />
-                        <div className="pt-4" style={{ maxWidth: '900px' }}>
+                        <div className="pt-4 space-y-4" style={{ maxWidth: '900px' }}>
                           {questionLoading ? (
-                            <div className="flex justify-center items-center py-6">...</div>
-                          ) : (
+                            <div className="flex justify-center items-center py-6">
+                              <svg
+                                className="animate-spin h-5 w-5 text-gray-500"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
+                              </svg>
+                            </div>
+                          ) : questions.length === 0 ? (
                             <button
                               onClick={handleGenerateQuestions}
                               className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100"
                             >
                               Generate Questions
                             </button>
+                          ) : (
+                            <div className="space-y-4">
+                              {questions.map((q) => (
+                                <div key={q.id} className="space-y-1">
+                                  <p className="font-medium text-sm">{q.text}</p>
+                                  <textarea
+                                    className="w-full border rounded px-2 py-1 text-sm"
+                                    rows={2}
+                                    value={answers[q.id] || ''}
+                                    onChange={(e) =>
+                                      setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                                    }
+                                    placeholder="Type your answer..."
+                                    disabled={submitting || !!feedback[q.id]}
+                                  />
+                                  {feedback[q.id] && (
+                                    <p className="text-sm text-green-600 whitespace-pre-wrap">{feedback[q.id]}</p>
+                                  )}
+                                </div>
+                              ))}
+                              {!Object.keys(feedback).length && (
+                                <button
+                                  onClick={async () => {
+                                    if (!selected) return;
+
+                                    const payload = {
+                                      video_id: selected.video.id,
+                                      answers: Object.entries(answers).map(([questionId, text]) => ({
+                                        question_id: Number(questionId),
+                                        text,
+                                      })),
+                                    };
+
+                                    setSubmitting(true);
+                                    try {
+                                      const response = await submitAnswers(payload);
+                                      const parsed: { [id: number]: string } = {};
+                                      for (const key in response) {
+                                        parsed[Number(key)] = response[key];
+                                      }
+                                      setFeedback(parsed);
+                                    } catch (error) {
+                                      console.error('Error submitting answers:', error);
+                                      alert('There was an error submitting your answers. Please try again.');
+                                    } finally {
+                                      setSubmitting(false);
+                                    }
+                                  }}
+                                  className="mt-4 w-full border rounded px-4 py-2 text-sm shadow bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+                                  disabled={submitting}
+                                >
+                                  {submitting ? (
+                                    <div className="flex justify-center">
+                                      <LoadingSpinner size={4} color="text-white" />
+                                    </div>
+                                  ) : (
+                                    'Submit Answers'
+                                  )}
+                                </button>
+                              )}
+                            </div>
+
                           )}
                         </div>
                       </>

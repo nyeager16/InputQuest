@@ -209,3 +209,24 @@ export async function getQuestions(videoId: number) {
   if (!ok) throw new Error('Failed to fetch video questions');
   return data;
 }
+
+type AnswerSubmission = {
+  video_id: number;
+  answers: {
+    question_id: number;
+    text: string;
+  }[];
+};
+
+export async function submitAnswers(payload: AnswerSubmission) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/answers/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!ok) throw new Error('Failed to get feedback');
+  return data;
+}

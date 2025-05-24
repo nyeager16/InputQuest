@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from fsrs import Scheduler, Rating
 from .models import (
     UserPreferences, Language, Word, UserWord, WordInstance, Definition, Video,
-    UserVideo, Sentence, Question
+    UserVideo, Sentence, Question, Answer
 )
 from .serializers import (
     UserSerializer, UserPreferencesSerializer, UserLoginSerializer, 
@@ -34,7 +34,7 @@ def current_user(request):
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def user_preferences(request):
-    prefs, created = UserPreferences.objects.get_or_create(user=request.user)
+    prefs, _ = UserPreferences.objects.get_or_create(user=request.user)
     if prefs.language == None:
         pl = Language.objects.get(abb='pl')
         prefs.language = pl
@@ -89,7 +89,7 @@ def user_words(request, id):
         except Word.DoesNotExist:
             return Response({"error": "Word not found"}, status=404)
         add_word(request.user, word)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response({"message": "ok"}, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -353,3 +353,23 @@ def get_questions(request, video_id):
     questions = create_questions(video)
     serializer = QuestionSerializer(questions, many=True)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_answers(request):
+    user = request.user
+    data = request.data
+    video_id = data['video_id']
+    answers = []
+    for item in data:
+        question = Question.objects.get(id=item['question_id'])
+        answer, _ = Answer.objects.update_or_create(
+            question=question,
+            user=user,
+            defaults={'text': item['text']}
+        )
+        answers.append(answer)
+    sentences = Sentence.objects.filter(video_id=video_id).order_by("start")
+    total_text = " ".join(sentence.text for sentence in sentences)
+    feedback_dict = generate_feedback(answers, total_text, user)
+    return Response(feedback_dict)

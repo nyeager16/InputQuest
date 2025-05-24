@@ -166,8 +166,8 @@ def generate_question(sentences, language):
 
     return response.choices[0].message.content
 
-def create_questions(video, min_time=30, min_sentences=5, max_questions=10):
-    sentences = Sentence.objects.filter(video=video).order_by("start")
+def create_questions(video, min_time=30, min_sentences=5, max_questions=2):
+    sentences = list(Sentence.objects.filter(video=video).order_by("start"))
     if not sentences:
         return
     

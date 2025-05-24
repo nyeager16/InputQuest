@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from .models import (
     UserPreferences, Language, Word, UserWord, Definition,
-    Video, Channel, UserVideo, Question
+    Video, Channel, UserVideo, Question, Feedback
 )
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
