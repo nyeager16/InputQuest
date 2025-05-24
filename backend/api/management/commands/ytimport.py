@@ -43,17 +43,18 @@ def best_match(stanza_pos, datawords):
 
     return best_match
 
-def extract_sentences(transcript_data, video):
+def extract_sentences(transcript_data, video, word_threshold=15):
     sentence_list = []
     buffer_text = ""
     buffer_start = None
     buffer_end = None
-
-    # Precompiled regex for sentence endings
     sentence_end_re = re.compile(r'([.?!]["\')\]]?\s+)')
 
     for entry in transcript_data:
         segment_text = entry['text'].replace("[Muzyka]", "").replace("[muzyka]", "").strip()
+        if not segment_text:
+            continue
+
         segment_start = entry['start']
         segment_end = segment_start + entry['duration']
 
@@ -63,16 +64,21 @@ def extract_sentences(transcript_data, video):
         buffer_text += (" " if buffer_text else "") + segment_text
         buffer_end = segment_end
 
-        # Split into sentences but keep delimiters
+        # Try splitting using punctuation
         parts = sentence_end_re.split(buffer_text)
-        if not parts:
-            continue
-
-        # Rebuild full sentence chunks
         combined = []
-        for i in range(0, len(parts) - 1, 2):
-            combined.append(parts[i] + parts[i + 1])
-        leftover = parts[-1] if len(parts) % 2 == 1 else ""
+        leftover = ""
+
+        if len(parts) > 1:
+            for i in range(0, len(parts) - 1, 2):
+                combined.append(parts[i] + parts[i + 1])
+            leftover = parts[-1] if len(parts) % 2 == 1 else ""
+        else:
+            # Not enough punctuation: fallback on word threshold
+            words = buffer_text.split()
+            if len(words) >= word_threshold:
+                combined.append(buffer_text)
+                leftover = ""
 
         total_chars = sum(len(s) for s in combined)
         if total_chars == 0:
@@ -95,12 +101,12 @@ def extract_sentences(transcript_data, video):
 
             current_start = sentence_end
 
-        # Set buffer for leftover text (usually fragment of next sentence)
+        # Update buffer with leftover
         buffer_text = leftover
         buffer_start = current_start if leftover.strip() else None
         buffer_end = None
 
-    # Handle any remaining text in buffer
+    # Handle any remaining text
     if buffer_text.strip():
         safe_end = buffer_end if buffer_end is not None else buffer_start + 1
         sentence_list.append(Sentence(

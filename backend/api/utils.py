@@ -166,7 +166,7 @@ def generate_question(sentences, language):
 
     return response.choices[0].message.content
 
-def create_questions(video):
+def create_questions(video, min_time=30, min_sentences=5, max_questions=10):
     sentences = Sentence.objects.filter(video=video).order_by("start")
     if not sentences:
         return
@@ -174,9 +174,6 @@ def create_questions(video):
     total_start = sentences[0].start
     total_end = sentences[-1].end
     total_duration = total_end - total_start
-    min_time = 30
-    min_sentences = 5
-    max_questions = 10
     chunk_duration = total_duration // max_questions
 
     used_sentence_indices = set()
