@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import VideoList from '@/components/VideoList';
 import VideoGrid from '@/components/VideoGrid';
-import { VideoWithScore, getVideoWords, getVideos } from '@/lib/api';
+import { VideoWithScore, getVideoWords, getVideos, getQuestions } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import VideoWordTags from '@/components/VideoWordTags';
 import BoundedNumberRangeInput from '@/components/BoundedNumberRangeInput';
@@ -23,6 +23,9 @@ export default function VideosPage() {
   const [nextPage, setNextPage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [readyToFetch, setReadyToFetch] = useState(false);
+
+  const [questionLoading, setQuestionLoading] = useState(false);
+  const [questions, setQuestions] = useState<string[]>([]);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -171,6 +174,21 @@ export default function VideosPage() {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const handleGenerateQuestions = async () => {
+    if (!selected) return;
+    setQuestionLoading(true);
+    try {
+      const q = await getQuestions(selected.video.id);
+      setQuestions(q); // assuming `q` is a string[]; adjust if needed
+    } catch (err) {
+      console.error('Failed to fetch questions', err);
+      setQuestions([]);
+    } finally {
+      setQuestionLoading(false);
+    }
+  };
+
+
   return (
     <div ref={containerRef} className="flex h-full relative select-none">
       {prefsLoading ? (
@@ -304,7 +322,21 @@ export default function VideosPage() {
                         </svg>
                       </div>
                     ) : (
-                      <VideoWordTags words={videoWords} />
+                      <>
+                        <VideoWordTags words={videoWords} />
+                        <div className="pt-4" style={{ maxWidth: '900px' }}>
+                          {questionLoading ? (
+                            <div className="flex justify-center items-center py-6">...</div>
+                          ) : (
+                            <button
+                              onClick={handleGenerateQuestions}
+                              className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100"
+                            >
+                              Generate Questions
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -313,7 +345,6 @@ export default function VideosPage() {
               </div>
             </div>
           )}
-
           {!showLeft && (
             <button
               onClick={() => setShowLeft(true)}

@@ -129,7 +129,7 @@ def populate_user_video_scores(user_id, language_id, word_set):
         if to_update:
             UserVideo.objects.bulk_update(to_update, ['score'], batch_size=500)
 
-def generate_question(sentences):
+def generate_question(sentences, language):
     question_count = Question.objects.count()
     if question_count > 500:
         return "Maximum sitewide questions reached. The limit will increase once this feature exits beta."
@@ -138,7 +138,7 @@ def generate_question(sentences):
         api_key=settings.OPENAI_API_KEY
     )
 
-    prompt = f"In 1 sentence, generate a listening comprehension question based on the following sentence(s) in Polish:\n\n{sentences}"
+    prompt = f"In 1 sentence, generate a listening comprehension question based on the following sentence(s) in {language}:\n\n{sentences}"
     
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -165,6 +165,57 @@ def generate_question(sentences):
     )
 
     return response.choices[0].message.content
+
+def create_questions(video):
+    sentences = Sentence.objects.filter(video=video).order_by("start")
+    if not sentences:
+        return
+    
+    total_start = sentences[0].start
+    total_end = sentences[-1].end
+    total_duration = total_end - total_start
+    min_time = 30
+    min_sentences = 5
+    max_questions = 10
+    chunk_duration = total_duration // max_questions
+
+    used_sentence_indices = set()
+    question_objects = []
+
+    for q_idx in range(max_questions):
+        chunk_start_time = total_start + q_idx * chunk_duration
+        chunk_end_time = chunk_start_time + chunk_duration
+        chunk_sentences = [s for s in sentences if s.start >= chunk_start_time and s.end <= chunk_end_time]
+
+        # Slide through chunk_sentences to find a valid window
+        for i in range(len(chunk_sentences) - min_sentences + 1):
+            window = chunk_sentences[i:i + min_sentences]
+            window_start = window[0].start
+            window_end = window[-1].end
+            window_duration = window_end - window_start
+
+            if window_duration >= min_time:
+                # Make sure sentences are not reused
+                window_ids = tuple(id(s) for s in window)
+                if any(idx in used_sentence_indices for idx in window_ids):
+                    continue
+
+                # Join text and generate question
+                joined_text = " ".join(s.text for s in window)
+                question_text = generate_question(joined_text, video.language.name)
+
+                question_objects.append(Question(
+                    video=video,
+                    text=question_text,
+                    start=window_start,
+                    end=window_end
+                ))
+
+                # Mark sentences as used
+                used_sentence_indices.update(window_ids)
+                break
+    Question.objects.bulk_create(question_objects)
+    return question_objects
 
 def generate_feedback(answers, total_text, user):
     if Feedback.objects.count() >= 200:

@@ -3,6 +3,7 @@ import string
 from math import floor, ceil
 import scrapetube
 import stanza
+import re
 from django.core.management.base import BaseCommand
 from api.models import Word, Channel, Video, Sentence, WordInstance, Language, UserVideo, User
 
@@ -42,6 +43,75 @@ def best_match(stanza_pos, datawords):
 
     return best_match
 
+def extract_sentences(transcript_data, video):
+    sentence_list = []
+    buffer_text = ""
+    buffer_start = None
+    buffer_end = None
+
+    # Precompiled regex for sentence endings
+    sentence_end_re = re.compile(r'([.?!]["\')\]]?\s+)')
+
+    for entry in transcript_data:
+        segment_text = entry['text'].replace("[Muzyka]", "").replace("[muzyka]", "").strip()
+        segment_start = entry['start']
+        segment_end = segment_start + entry['duration']
+
+        if buffer_start is None:
+            buffer_start = segment_start
+
+        buffer_text += (" " if buffer_text else "") + segment_text
+        buffer_end = segment_end
+
+        # Split into sentences but keep delimiters
+        parts = sentence_end_re.split(buffer_text)
+        if not parts:
+            continue
+
+        # Rebuild full sentence chunks
+        combined = []
+        for i in range(0, len(parts) - 1, 2):
+            combined.append(parts[i] + parts[i + 1])
+        leftover = parts[-1] if len(parts) % 2 == 1 else ""
+
+        total_chars = sum(len(s) for s in combined)
+        if total_chars == 0:
+            continue
+
+        current_start = buffer_start
+        current_time_span = buffer_end - buffer_start
+
+        for sentence in combined:
+            proportion = len(sentence) / total_chars
+            duration = current_time_span * proportion
+            sentence_end = current_start + duration
+
+            sentence_list.append(Sentence(
+                video=video,
+                text=sentence.strip(),
+                start=int(current_start),
+                end=int(sentence_end)
+            ))
+
+            current_start = sentence_end
+
+        # Set buffer for leftover text (usually fragment of next sentence)
+        buffer_text = leftover
+        buffer_start = current_start if leftover.strip() else None
+        buffer_end = None
+
+    # Handle any remaining text in buffer
+    if buffer_text.strip():
+        safe_end = buffer_end if buffer_end is not None else buffer_start + 1
+        sentence_list.append(Sentence(
+            video=video,
+            text=buffer_text.strip(),
+            start=int(buffer_start),
+            end=int(safe_end)
+        ))
+
+    return sentence_list
+
 class Command(BaseCommand):
     help = "Imports data into the Word, Channel, Video, and WordInstance models"
 
@@ -62,15 +132,14 @@ class Command(BaseCommand):
         channel_name = channel_url.split("@")[-1]
         channel_videos = scrapetube.get_channel(channel_url=channel_url)
 
-        channel, created = Channel.objects.get_or_create(
+        channel, _ = Channel.objects.get_or_create(
             url=channel_url,
             name=channel_name
         )
         for video in channel_videos:
-            full_text = ""
-            timestamps = {}
-            curr_index = 0
             videoID = video['videoId']
+            if Video.objects.filter(url=videoID).exists():
+                continue
             title = str(video['title']['runs'][0]['text'])
             try:
                 tr = YouTubeTranscriptApi.get_transcript(videoID, 
@@ -86,6 +155,8 @@ class Command(BaseCommand):
             vid = Video(url=videoID, title=title, channel=channel, 
                                 language=language_object, auto_generated=auto)
             videos.append(vid)
+            sentence_list = extract_sentences(tr, vid)
+            sentences.extend(sentence_list)
             for sec in tr:
                 '''
                 sec is dict w/:
@@ -94,17 +165,10 @@ class Command(BaseCommand):
                 start = floor(sec['start'])
                 end = ceil(start+sec['duration'])
                 text = sec['text']
-                text = text.replace("[Muzyka]", "").replace("[muzyka]", "")
-                timestamps[curr_index] = [start, end]
-                curr_index += len(text)
-                full_text = full_text + " " + text
+                text = text.replace("[Muzyka]", "").replace("[muzyka]", "").strip()
                 text = text.translate(str.maketrans('','',string.punctuation))
-                if text != "":
-                    sentence = Sentence(video=vid, text=text, start=start, end=end)
-                    sentences.append(sentence)
                 text_pos = classify_polish_pos(text)
-                text = text.lower()
-                all_words = text.split()
+                all_words = text.lower().split()
                 existing_words = set(Word.objects.filter(text__in=all_words).values_list('text', flat=True))
                 for i in range(len(all_words)):
                     word = all_words[i]
@@ -116,20 +180,20 @@ class Command(BaseCommand):
 
                         if datawords.count() == 1:
                             wordinstances.append(WordInstance(word=datawords.first(), 
-                                                              video=vid, start=start, end=end))
+                                                                video=vid, start=start, end=end))
                         else:
                             dataword = next((dw for dw in datawords if dw.tag and dw.tag == stanza_pos), None)
                             if dataword:
                                 wordinstances.append(WordInstance(word=dataword, 
-                                                                  video=vid, start=start, end=end))
+                                                                    video=vid, start=start, end=end))
                             else:
                                 dataword = best_match(stanza_pos, datawords)
                                 if dataword:
                                     wordinstances.append(WordInstance(word=dataword, 
-                                                                      video=vid, start=start, end=end))
+                                                                        video=vid, start=start, end=end))
                                 else:
                                     wordinstances.append(WordInstance(word=datawords.first(), 
-                                                                      video=vid, start=start, end=end))
+                                                                        video=vid, start=start, end=end))
         Video.objects.bulk_create(videos)
         Sentence.objects.bulk_create(sentences)
         WordInstance.objects.bulk_create(wordinstances)
@@ -140,8 +204,8 @@ class Command(BaseCommand):
             UserVideo.objects.bulk_create(user_videos_to_create)
 
 '''
-python manage.py ytimport "https://www.youtube.com/@EasyPolish" "pl"
-python manage.py ytimport "https://www.youtube.com/@Robert_Maklowicz" "pl"
-python manage.py ytimport "https://www.youtube.com/@DoRoboty" "pl"
-python manage.py ytimport "https://www.youtube.com/@LingoPutPolish" "pl"
+poetry run python manage.py ytimport "https://www.youtube.com/@EasyPolish" "pl"
+poetry run python manage.py ytimport "https://www.youtube.com/@Robert_Maklowicz" "pl"
+poetry run python manage.py ytimport "https://www.youtube.com/@DoRoboty" "pl"
+poetry run python manage.py ytimport "https://www.youtube.com/@LingoPutPolish" "pl"
 '''

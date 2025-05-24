@@ -4,21 +4,22 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticate
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view, permission_classes
 from django.utils.timezone import now
-from django.db.models import Q, Count, F, Value
+from django.db.models import Q, Count, Max
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from fsrs import Scheduler, Rating
 from .models import (
     UserPreferences, Language, Word, UserWord, WordInstance, Definition, Video,
-    UserVideo
+    UserVideo, Sentence, Question
 )
 from .serializers import (
     UserSerializer, UserPreferencesSerializer, UserLoginSerializer, 
     UserSignupSerializer, UserWordSerializer, WordSerializer, 
-    DefinitionSerializer, VideoSerializer, UserVideoSerializer
+    DefinitionSerializer, VideoSerializer, UserVideoSerializer,
+    QuestionSerializer
 )
 from .utils import (
-    get_common_words
+    get_common_words, create_questions, generate_feedback
 )
 from .tasks import (
     add_definitions, calculate_user_video_scores
@@ -334,4 +335,21 @@ def video_words(request, video_id):
     ordered_words = [word_map[wid] for wid in root_word_ids if wid in word_map]
 
     serializer = WordSerializer(ordered_words, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_questions(request, video_id):
+    try:
+        video = Video.objects.get(id=video_id)
+    except Video.DoesNotExist:
+        return Response({'error': 'Video not found'}, status=404)
+    
+    existing_questions = Question.objects.filter(video=video).order_by('start')
+    if existing_questions.exists():
+        serializer = QuestionSerializer(existing_questions, many=True)
+        return Response(serializer.data)
+    
+    questions = create_questions(video)
+    serializer = QuestionSerializer(questions, many=True)
     return Response(serializer.data)

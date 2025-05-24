@@ -20,17 +20,6 @@
 
 ---
 
-## Project Structure
-
-```
-InputQuest/
-├── backend/        # Django REST Framework backend
-├── frontend/       # Next.js + Tailwind CSS frontend
-└── README.md
-```
-
----
-
 ## Backend Setup (Django + PostgreSQL)
 
 ### Prerequisites
@@ -59,11 +48,10 @@ cd backend
 poetry install
 ```
 
-### 3. Apply migrations and run the server
+### 3. Apply migrations
 
 ```bash
 poetry run python manage.py migrate
-poetry run python manage.py runserver
 ```
 
 ---
