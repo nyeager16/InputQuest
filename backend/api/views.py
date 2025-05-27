@@ -80,12 +80,23 @@ def add_word(user, word):
     calculate_user_video_scores(user.id, word.language.id)
     add_definitions([word.id], 'pl')
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
-def user_words(request, id):
+def user_words(request):
+    if request.method == 'GET':
+        vocab_filter = int(request.query_params.get('vocab_filter'))
+        if vocab_filter == 0: # Alphabetical Order
+            user_words = UserWord.objects.filter(user=request.user).order_by('word__text')
+        else: # Recently Added
+            user_words = UserWord.objects.filter(user=request.user).order_by('-id')
+        
+        serializer = UserWordSerializer(user_words, many=True)
+        return Response(serializer.data)
+
     if request.method == 'POST':
+        word_id = request.data.get('word_id')
         try:
-            word = Word.objects.get(id=id)
+            word = Word.objects.get(id=word_id)
         except Word.DoesNotExist:
             return Response({"error": "Word not found"}, status=404)
         add_word(request.user, word)
@@ -115,19 +126,27 @@ def all_user_words(request, vocab_filter):
     serializer = UserWordSerializer(user_words, many=True)
     return Response(serializer.data)
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def all_user_word_ids(request):
-    user_word_ids = UserWord.objects.filter(user=request.user).values_list('word__id', flat=True)
-    return Response(user_word_ids, status=status.HTTP_200_OK)
+class CommonWordsPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 10
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def common_words(request, count):
+def common_words(request):
     language = Language.objects.get(abb='pl')
-    words = get_common_words(language)[:count]
-    serializer = WordSerializer(words, many=True)
-    return Response(serializer.data)
+    words = get_common_words(language)
+
+    # Filter out known words only if user is authenticated
+    if request.user.is_authenticated:
+        user_word_ids = UserWord.objects.filter(user=request.user).values_list('word__id', flat=True)
+        words = words.exclude(id__in=user_word_ids)
+
+    paginator = CommonWordsPagination()
+    result_page = paginator.paginate_queryset(words, request)
+    serializer = WordSerializer(result_page, many=True)
+
+    return paginator.get_paginated_response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

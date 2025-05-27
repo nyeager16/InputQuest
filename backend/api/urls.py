@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     current_user, user_preferences, user_login, user_signup, all_user_words,
-    common_words, user_words, all_user_word_ids, get_user_reviews, submit_review,
+    common_words, user_words, get_user_reviews, submit_review,
     definitions, user_words_del, get_videos, video_words, get_questions, submit_answers
 )
 from rest_framework_simplejwt.views import (
@@ -13,12 +13,10 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('users/me/', current_user),
     path('users/me/preferences/', user_preferences, name='user-preferences'),
-    path('users/me/userwords/<int:vocab_filter>/', all_user_words, name='all-user-words'),
-    path('users/me/userwords/ids/', all_user_word_ids, name='all-user-word-ids'),
-    path('users/me/userwords/<int:id>/', user_words, name='change-user-words'),
+    path('users/me/userwords/', user_words, name='user-words'),
     path('users/me/reviews/', get_user_reviews, name='get-user-reviews'),
 
-    path('words/common/<int:count>/', common_words, name='common-words'),
+    path('words/common/', common_words, name='common-words'),
     path('words/video/<int:video_id>/', video_words, name='video-words'),
 
     path('userwords/<int:id>/update/<int:rating>/', submit_review, name='submit-review'),

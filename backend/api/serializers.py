@@ -82,7 +82,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
 class WordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Word
-        fields = ['id', 'text']
+        fields = ['id', 'text', 'tag']
 
 class UserWordSerializer(serializers.ModelSerializer):
     word = WordSerializer()

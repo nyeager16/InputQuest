@@ -23,25 +23,19 @@ export async function updateUserPreferences(updates: {
 }
 
 export async function getUserWords(vocab_filter: number) {
-  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/${vocab_filter}/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/?vocab_filter=${vocab_filter}`, {
     method: 'GET',
   });
   if (!ok) throw new Error('Failed to fetch user words');
   return data;
 }
 
-export async function getUserWordIds() {
-  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/ids/`, {
-    method: 'GET',
-  });
-  if (!ok) throw new Error('Failed to fetch user words');
-  return data;
-}
+export async function getCommonWords(pageOrUrl: number | string = 1) {
+  const url = typeof pageOrUrl === 'string'
+    ? pageOrUrl
+    : `${API_URL}/words/common/?page=${pageOrUrl}`;
 
-export async function getCommonWords() {
-  const { data, ok } = await fetchWithAuth(`${API_URL}/words/common/100/`, {
-    method: 'GET',
-  });
+  const { data, ok } = await fetchWithAuth(url, { method: 'GET' });
   if (!ok) throw new Error('Failed to fetch common words');
   return data;
 }
@@ -65,8 +59,9 @@ export async function submitReview(userWordId: number, rating: 0 | 1): Promise<v
 }
 
 export async function addUserWord(wordId: number) {
-  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/${wordId}/`, {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/`, {
     method: 'POST',
+    body: JSON.stringify({ word_id: wordId }),
   });
   if (!ok) throw new Error('Failed to add word');
   return data;
