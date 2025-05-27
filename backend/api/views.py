@@ -106,13 +106,7 @@ def user_words_del(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def all_user_words(request):
-    try:
-        prefs = UserPreferences.objects.get(user=request.user)
-        vocab_filter = prefs.vocab_filter
-    except UserPreferences.DoesNotExist:
-        vocab_filter = 0
-
+def all_user_words(request, vocab_filter):
     if vocab_filter == 0: # Alphabetical Order
         user_words = UserWord.objects.filter(user=request.user).order_by('word__text')
     else: # Recently Added
@@ -291,7 +285,7 @@ def get_videos(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedOrReadOnly])
 def video_words(request, video_id):
-    word_count = 25
+    word_count = 20
     try:
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist:

@@ -47,12 +47,19 @@ class Channel(models.Model):
     url = models.CharField(max_length=100)
     name = models.CharField(max_length=100, default="NA", null=True)
 
+class Genre(models.Model):
+    name = models.CharField(max_length=50, unique=True, db_index=True)
+
+    def __str__(self):
+        return self.name
+
 class Video(models.Model):
     url = models.CharField(max_length=100)
     title = models.CharField(max_length=100)
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True)
     auto_generated = models.BooleanField(default=True)
+    genre = models.ManyToManyField(Genre, related_name='videos', blank=True)
 
 class UserVideo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

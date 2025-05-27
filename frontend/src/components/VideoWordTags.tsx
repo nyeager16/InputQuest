@@ -17,7 +17,7 @@ export default function VideoWordTags({ words }: VideoWordTagsProps) {
           {words.map((word, index) => (
             <span
               key={index}
-              className="px-3 py-1 rounded text-sm font-medium"
+              className="px-3 py-1 rounded text-sm font-medium select-text"
               style={{
                 backgroundColor: '#e0f7fa',
                 color: '#00695c',

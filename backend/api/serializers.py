@@ -108,7 +108,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Video
-        fields = ['id', 'url', 'title', 'channel', 'language', 'auto_generated']
+        fields = ['id', 'url', 'title', 'channel', 'language', 'auto_generated', 'genre']
 
 class UserVideoSerializer(serializers.ModelSerializer):
     video = VideoSerializer(read_only=True)

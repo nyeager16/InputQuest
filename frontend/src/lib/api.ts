@@ -22,8 +22,8 @@ export async function updateUserPreferences(updates: {
   return data;
 }
 
-export async function getUserWords() {
-  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/`, {
+export async function getUserWords(vocab_filter: number) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/${vocab_filter}/`, {
     method: 'GET',
   });
   if (!ok) throw new Error('Failed to fetch user words');

@@ -13,7 +13,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('users/me/', current_user),
     path('users/me/preferences/', user_preferences, name='user-preferences'),
-    path('users/me/userwords/', all_user_words, name='all-user-words'),
+    path('users/me/userwords/<int:vocab_filter>/', all_user_words, name='all-user-words'),
     path('users/me/userwords/ids/', all_user_word_ids, name='all-user-word-ids'),
     path('users/me/userwords/<int:id>/', user_words, name='change-user-words'),
     path('users/me/reviews/', get_user_reviews, name='get-user-reviews'),

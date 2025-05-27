@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FlashcardList from '@/components/FlashcardList';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { getUserWords, getDefinition, saveDefinition, deleteUserWords } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 
@@ -15,12 +16,13 @@ export default function HomePage() {
   const { data: userPrefs } = useUserPreferences();
 
   useEffect(() => {
+    setCards([]);
     loadWords();
   }, [userPrefs?.vocab_filter]);
 
   const loadWords = async () => {
     try {
-      const words = await getUserWords();
+      const words = await getUserWords(userPrefs?.vocab_filter ?? 0);
       setCards(words);
     } catch (err) {
       console.error('Error loading words:', err);
@@ -90,7 +92,7 @@ export default function HomePage() {
           <div>
             <h2 className="text-xl font-semibold mb-2">{selectedCard.word.text}</h2>
             {loadingDef ? (
-              <p>Loading definition...</p>
+              <LoadingSpinner size={4} color="text-white" />
             ) : error ? (
               <p className="text-red-500">{error}</p>
             ) : (
