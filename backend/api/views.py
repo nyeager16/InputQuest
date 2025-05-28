@@ -19,7 +19,7 @@ from .serializers import (
     QuestionSerializer
 )
 from .utils import (
-    get_common_words, create_questions, generate_feedback
+    get_common_words, create_questions, generate_feedback, get_conjugation_table
 )
 from .tasks import (
     add_definitions, calculate_user_video_scores
@@ -115,17 +115,6 @@ def user_words_del(request):
 
     return Response({'deleted': deleted}, status=status.HTTP_200_OK)
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def all_user_words(request, vocab_filter):
-    if vocab_filter == 0: # Alphabetical Order
-        user_words = UserWord.objects.filter(user=request.user).order_by('word__text')
-    else: # Recently Added
-        user_words = UserWord.objects.filter(user=request.user).order_by('-id')
-    
-    serializer = UserWordSerializer(user_words, many=True)
-    return Response(serializer.data)
-
 class CommonWordsPagination(PageNumberPagination):
     page_size = 50
     page_size_query_param = 'page_size'
@@ -144,6 +133,8 @@ def common_words(request):
 
     paginator = CommonWordsPagination()
     result_page = paginator.paginate_queryset(words, request)
+    word_ids = [word.id for word in result_page]
+    add_definitions(word_ids, language.abb)
     serializer = WordSerializer(result_page, many=True)
 
     return paginator.get_paginated_response(serializer.data)
@@ -386,3 +377,60 @@ def submit_answers(request):
     total_text = " ".join(sentence.text for sentence in sentences)
     feedback_dict = generate_feedback(answers, total_text, user)
     return Response(feedback_dict)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def conjugations(request, word_id):
+    word = Word.objects.get(id=word_id)
+    result = get_conjugation_table(word, None)
+    return Response(result)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def learn_word(request, word_id):
+    definition_obj = Definition.objects.filter(word_id=word_id, user=None).first()
+    definition_text = definition_obj.text if definition_obj and definition_obj.text else "No definition found"
+
+    # Get all relevant word IDs (including root and derived words)
+    derived_ids = list(Word.objects.filter(root_id=word_id).values_list('id', flat=True))
+    relevant_word_ids = [word_id] + derived_ids
+
+    # Find the video with the most WordInstances for relevant words
+    top_video_data = (
+        WordInstance.objects.filter(word_id__in=relevant_word_ids)
+        .values('video')
+        .annotate(instance_count=Count('id'))
+        .order_by('-instance_count')
+        .first()
+    )
+
+    if not top_video_data:
+        return Response({
+            "definition": definition_text,
+            "video_url": None,
+            "instance_starts": []
+        }, status=status.HTTP_200_OK)
+
+    video_id = top_video_data['video']
+    try:
+        video = Video.objects.get(id=video_id)
+    except Video.DoesNotExist:
+        return Response({
+            "definition": definition_text,
+            "video_url": None,
+            "instance_starts": []
+        }, status=status.HTTP_200_OK)
+
+    # Get all instance start times for the relevant words in this video
+    starts = list(
+        WordInstance.objects
+        .filter(word_id__in=relevant_word_ids, video=video)
+        .order_by('start')
+        .values_list('start', flat=True)
+    )
+
+    return Response({
+        "definition": definition_text,
+        "video_url": video.url,
+        "instance_starts": starts
+    }, status=status.HTTP_200_OK)

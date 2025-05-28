@@ -233,3 +233,11 @@ export async function getConjugations(wordId: number) {
   if (!ok) throw new Error('Failed to get conjugations');
   return data;
 }
+
+export async function getLearnData(wordId: number) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/learn/${wordId}/`, {
+    method: 'GET',
+  });
+  if (!ok) throw new Error('Failed to get word data');
+  return data;
+}

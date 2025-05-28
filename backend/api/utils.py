@@ -269,3 +269,151 @@ def generate_feedback(answers, total_text, user):
     if feedback_objects:
         Feedback.objects.bulk_create(feedback_objects)
     return feedback_dict
+
+def get_conjugation_table(word, user):
+    user_words = set()
+    if user:
+        user_words = set(
+            UserWord.objects.filter(user=user, needs_review=True, word__root__isnull=False)
+            .values_list('word__id', flat=True)
+        )
+
+    split_tag = word.tag.split(":")
+    table_type = -1
+    data = {}
+
+    # VERB
+    if split_tag[0] == "inf":
+        table_type = 0
+        child_words = Word.objects.filter(root=word)
+        verb_table = {
+            "present": {p: {"sg": {}, "pl": {}} for p in ["1p", "2p", "3p"]},
+            "past": {p: {g: {} for g in ["m", "f", "n", "mpl", "opl"]} for p in ["1p", "2p", "3p"]}
+        }
+
+        person_map = {"pri": "1p", "sec": "2p", "ter": "3p"}
+
+        for w in child_words:
+            tag = w.tag
+            is_user = w.id in user_words
+
+            # Present
+            if tag in ["fin:sg:pri:imperf", "fin:sg:pri:perf"]:
+                verb_table["present"]["1p"]["sg"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+            elif tag in ["fin:pl:pri:imperf", "fin:pl:pri:perf"]:
+                verb_table["present"]["1p"]["pl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+            elif tag in ["fin:sg:sec:imperf", "fin:sg:sec:perf"]:
+                verb_table["present"]["2p"]["sg"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+            elif tag in ["fin:pl:sec:imperf", "fin:pl:sec:perf"]:
+                verb_table["present"]["2p"]["pl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+            elif tag in ["fin:sg:ter:imperf", "fin:sg:ter:perf"]:
+                verb_table["present"]["3p"]["sg"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+            elif tag in ["fin:pl:ter:imperf", "fin:pl:ter:perf"]:
+                verb_table["present"]["3p"]["pl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+
+            # Past
+            parts = tag.split(":")
+            if len(parts) >= 4 and parts[0] == "praet":
+                person = person_map.get(parts[3])
+                number = parts[1]
+                gender = parts[2]
+
+                if not person:
+                    continue
+                if number == "sg":
+                    if "m" in gender:
+                        verb_table["past"][person]["m"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    elif gender == "f":
+                        verb_table["past"][person]["f"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    elif gender == "n":
+                        verb_table["past"][person]["n"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                elif number == "pl":
+                    if "m" in gender and "f" not in gender:
+                        verb_table["past"][person]["mpl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    elif "m" in gender and "f" in gender:
+                        verb_table["past"][person]["opl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+
+        data = {"verb": verb_table}
+
+    # NOUN
+    elif split_tag[0] == "subst":
+        table_type = 1
+        child_words = list(Word.objects.filter(root=word)) + [word]
+        noun_table = {case: {"sg": {}, "pl": {}} for case in ["nom", "gen", "dat", "acc", "inst", "loc", "voc"]}
+
+        for w in child_words:
+            parts = w.tag.split(":")
+            if len(parts) < 3:
+                continue
+            number = parts[1]
+            if number not in ["sg", "pl"]:
+                continue
+
+            for case in parts[2].split("."):
+                if case in noun_table:
+                    noun_table[case][number] = {
+                        "id": w.id,
+                        "text": w.text,
+                        "needs_review": w.id in user_words
+                    }
+
+        data = {"noun": noun_table}
+
+    # ADJECTIVE
+    elif split_tag[0] == "adj":
+        table_type = 2
+        child_words = list(Word.objects.filter(root=word)) + [word]
+
+        cases = ['nom', 'gen', 'dat', 'acc', 'inst', 'loc', 'voc']
+        col_map = {
+            "nom": ["m", "n", "f", "mpl", "opl"],
+            "gen": ["mf", "f", "pl"],
+            "dat": ["mf", "f", "pl"],
+            "acc": ["m", "n", "f", "mpl", "opl"],
+            "inst": ["mf", "f", "pl"],
+            "loc": ["mf", "f", "pl"],
+            "voc": ["m", "n", "f", "mpl", "opl"]
+        }
+        adj_table = {case: {col: {} for col in cols} for case, cols in col_map.items()}
+
+        for w in child_words:
+            parts = w.tag.split(":")
+            if len(parts) < 5 or parts[-1] != "pos":
+                continue
+
+            number = parts[1]
+            genders = parts[3].split(".")
+            cases_in_tag = parts[2].split(".")
+            is_user = w.id in user_words
+
+            for case in cases_in_tag:
+                if case not in adj_table:
+                    continue
+
+                if case in ["gen", "dat", "inst", "loc"]:
+                    if number == "sg" and ("m" in genders or "n" in genders):
+                        adj_table[case]["mf"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    if number == "sg" and "f" in genders:
+                        adj_table[case]["f"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    if number == "pl":
+                        adj_table[case]["pl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                else:
+                    if number == "sg":
+                        if "m" in genders:
+                            adj_table[case]["m"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                        if "n" in genders:
+                            adj_table[case]["n"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                        if "f" in genders:
+                            adj_table[case]["f"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    elif number == "pl":
+                        if "m" in genders and "f" not in genders:
+                            adj_table[case]["mpl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                        elif "m" in genders and "f" in genders:
+                            adj_table[case]["opl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+
+        data = {"adjective": adj_table}
+
+    return {
+        "table_type": table_type,
+        "conjugation_table": data
+    }

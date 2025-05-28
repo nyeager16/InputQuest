@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { getCommonWords, addUserWord, getConjugations } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import YouTube from 'react-youtube';
+import { getCommonWords, addUserWord, getConjugations, getLearnData } from '@/lib/api';
 import ConjugationTable from '@/components/ConjugationTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -52,8 +52,12 @@ export default function LearnPage() {
   const [conjugationCache, setConjugationCache] = useState<ConjugationCache>({});
   const [conjugationLoadingId, setConjugationLoadingId] = useState<number | null>(null);
 
+  const [learnDataCache, setLearnDataCache] = useState<{ [wordId: number]: any }>({});
+  const [learnDataLoadingId, setLearnDataLoadingId] = useState<number | null>(null);
+  const [videoTimestamps, setVideoTimestamps] = useState<{ [wordId: number]: number }>({});
+
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const router = useRouter();
+  const playerRefs = useRef<{ [wordId: number]: any }>({});
 
   const handleExpandWord = async (wordId: number) => {
     const newId = expandedWordId === wordId ? null : wordId;
@@ -69,6 +73,18 @@ export default function LearnPage() {
         console.error('Failed to load conjugations', err);
       } finally {
         setConjugationLoadingId(null);
+      }
+    }
+    if (!learnDataCache[newId]) {
+      try {
+        setLearnDataLoadingId(newId);
+        const learnData = await getLearnData(newId);
+        setLearnDataCache((prev) => ({ ...prev, [newId]: learnData }));
+        setVideoTimestamps((prev) => ({ ...prev, [newId]: 0 }));
+      } catch (err) {
+        console.error('Failed to load learn data', err);
+      } finally {
+        setLearnDataLoadingId(null);
       }
     }
   };
@@ -165,7 +181,7 @@ export default function LearnPage() {
     }
   };
 
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading) return <LoadingSpinner size={4} color="text-black" />;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
@@ -220,50 +236,71 @@ export default function LearnPage() {
             const isExpanded = expandedWordId === word.id;
 
             return (
-              <li
-                key={word.id}
-                className="border-t border-gray-300"
-              >
-                <div
-                  className="flex items-center justify-between gap-3 p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleExpandWord(word.id)}
-                >
+              <li key={word.id} className="border-t border-gray-300">
+                <div className="flex items-center justify-between gap-3 p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleExpandWord(word.id)}>
                   <div className="flex items-center gap-2">
-                    <div className={`text-xs font-semibold w-16 text-center py-1 rounded text-white ${posColor}`}>
-                      {posLabel}
-                    </div>
+                    <div className={`text-xs font-semibold w-16 text-center py-1 rounded text-white ${posColor}`}>{posLabel}</div>
                     <span className="text-sm font-medium">{word.text}</span>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/learn/${word.text}`);
-                      }}
-                      className="bg-blue-500 text-white px-3 py-1 text-sm hover:bg-blue-600 rounded-sm transition-colors"
-                    >
-                      Learn
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAdd(word.id);
-                      }}
-                      className="bg-green-500 text-white px-3 py-1 text-sm hover:bg-green-600 rounded-sm transition-colors"
-                    >
-                      Add
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAdd(word.id);
+                    }}
+                    className="bg-green-500 text-white px-3 py-1 text-sm hover:bg-green-600 rounded-sm transition-colors"
+                  >
+                    Add
+                  </button>
                 </div>
+
                 {isExpanded && (
                   <div className="bg-gray-50 px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-row gap-6">
-                      {/* Left side placeholder/summary */}
-                      <div className="w-1/2 text-sm text-gray-600">
-                        <p className="italic">Placeholder</p>
+                      {/* Left Side */}
+                      <div className="w-1/2 text-sm text-gray-700 space-y-3">
+                        {learnDataLoadingId === word.id ? (
+                          <LoadingSpinner size={4} color="text-black" />
+                        ) : learnDataCache[word.id] ? (
+                          <>
+                            <p className="text-center italic">{learnDataCache[word.id].definition}</p>
+                            <div className="relative pt-[56.25%] w-full">
+                              <div className="absolute top-0 left-0 w-full h-full">
+                                <YouTube
+                                  videoId={learnDataCache[word.id].video_url}
+                                  onReady={(event) => {
+                                    playerRefs.current[word.id] = event.target;
+                                    const start = learnDataCache[word.id].instance_starts[videoTimestamps[word.id] || 0];
+                                    event.target.seekTo(start, true);
+                                  }}
+                                  opts={{
+                                    width: '100%',
+                                    height: '100%',
+                                    playerVars: {
+                                      autoplay: 1,
+                                    },
+                                  }}
+                                  className="w-full h-full"
+                                />
+                              </div>
+                            </div>
+                            <button
+                              className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                              onClick={() => {
+                                const times = learnDataCache[word.id].instance_starts;
+                                const nextIndex = ((videoTimestamps[word.id] || 0) + 1) % times.length;
+                                playerRefs.current[word.id]?.seekTo(times[nextIndex], true);
+                                setVideoTimestamps((prev) => ({ ...prev, [word.id]: nextIndex }));
+                              }}
+                            >
+                              Skip to "{word.text}"
+                            </button>
+                          </>
+                        ) : (
+                          <p className="text-red-500">Failed to load definition</p>
+                        )}
                       </div>
 
-                      {/* Right side: conjugation table */}
+                      {/* Right Side */}
                       <div className="w-1/2 overflow-x-auto">
                         {conjugationLoadingId === word.id ? (
                           <LoadingSpinner size={4} color="text-black" />

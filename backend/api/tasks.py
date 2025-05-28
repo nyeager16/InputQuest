@@ -47,14 +47,15 @@ def calculate_video_CI(user_id):
 @background()
 def add_definitions(word_ids, source):
     translator = GoogleTranslator(source=source, target='en')
-    for word_id in word_ids:
-        word = Word.objects.get(id=word_id)
+    definitions = Definition.objects.filter(
+        word_id__in=word_ids, user=None, text=None
+    ).select_related('word')
+    for definition in definitions:
+        word = definition.word
         try:
             translated_word = translator.translate(text=word.text)
-
         except TranslationNotFound:
             translated_word = ""
-        definition = Definition.objects.get(word=word, user=None)
         definition.text = translated_word
         definition.save()
 
