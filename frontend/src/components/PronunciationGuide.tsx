@@ -29,7 +29,7 @@ const PronunciationGuide: FC<PronunciationGuideProps> = ({ language, word }) => 
           className="px-4 py-2 cursor-pointer text-center font-medium"
           onClick={toggleOpen}
         >
-          Show Pronunciation Guide
+          Pronunciation Guide
         </div>
         {isOpen && (
           <div className="bg-gray-100 px-4 py-3 space-y-1 border-t border-gray-300">

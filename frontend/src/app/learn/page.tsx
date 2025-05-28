@@ -67,6 +67,8 @@ export default function LearnPage() {
     setExpandedWordId(newId);
     setShowPronunciationId(null);
 
+    if (newId === null) return;
+
     if (newId && !conjugationCache[newId]) {
       try {
         setConjugationLoadingId(newId);
@@ -185,7 +187,13 @@ export default function LearnPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner size={4} color="text-black" />;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner size={8} color="text-black" />
+      </div>
+    );
+
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
@@ -262,7 +270,8 @@ export default function LearnPage() {
                 {isExpanded && (
                   <div className="bg-gray-50 px-6 py-4 space-y-4" onClick={(e) => e.stopPropagation()}>
                     <div className="text-center space-y-2">
-                      <p className="text-lg italic">{learnData?.definition || '...'}</p>
+                      <p className="text-xl font-bold">{word.text}</p>
+                      <p className="text-lg">{learnData?.definition || '...'}</p>
                       <div className="flex justify-center">
                         <PronunciationGuide language="pl" word={word.text} />
                       </div>
@@ -270,30 +279,30 @@ export default function LearnPage() {
 
                     <div className="flex flex-row gap-6">
                       {/* Left side: video and button */}
-                      <div className="w-1/2 text-sm text-gray-700 space-y-3">
+                      <div
+                        className={`w-1/2 text-sm text-gray-700 space-y-3 flex flex-col ${
+                          conjugationCache[word.id]?.conjugation_table ? 'max-h-[500px] overflow-y-auto' : ''
+                        }`}
+                      >
                         {learnDataLoadingId === word.id ? (
                           <LoadingSpinner size={4} color="text-black" />
                         ) : learnData ? (
                           <>
-                            <div className="relative pt-[56.25%] w-full">
-                              <div className="absolute top-0 left-0 w-full h-full">
-                                <YouTube
-                                  videoId={learnData.video_url}
-                                  onReady={(event) => {
-                                    playerRefs.current[word.id] = event.target;
-                                    if (currentInstance) {
-                                      event.target.seekTo(currentInstance.start, true);
-                                    }
-                                  }}
-                                  opts={{
-                                    width: '100%',
-                                    height: '100%',
-                                    playerVars: {
-                                      autoplay: 1,
-                                    },
-                                  }}
-                                />
-                              </div>
+                            <div className="w-full max-w-[480px] aspect-video relative mx-auto">
+                              <YouTube
+                                videoId={learnData.video_url}
+                                onReady={(event) => {
+                                  playerRefs.current[word.id] = event.target;
+                                }}
+                                opts={{
+                                  width: '100%',
+                                  height: '100%',
+                                  playerVars: {
+                                    autoplay: 0,
+                                  },
+                                }}
+                                className="absolute top-0 left-0 w-full h-full"
+                              />
                             </div>
                             {currentInstance && (
                               <button
@@ -312,6 +321,7 @@ export default function LearnPage() {
                           <p className="text-red-500">Failed to load video</p>
                         )}
                       </div>
+
 
                       {/* Right side: conjugation table */}
                       <div className="w-1/2 overflow-x-auto">

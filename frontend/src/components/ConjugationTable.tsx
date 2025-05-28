@@ -27,7 +27,7 @@ type TableData = {
 const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
   const renderVerbTable = (table: VerbTable) => (
     <>
-      <table className="w-full border border-gray-300 border-collapse text-sm mt-4">
+      <table className="w-full border border-gray-300 border-collapse text-sm mt-0">
         <thead>
           <tr>
             <th colSpan={3} className="border border-gray-300 px-2 py-1 text-center font-bold bg-gray-100">
@@ -51,7 +51,7 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
         </tbody>
       </table>
 
-      <table className="w-full border border-gray-300 border-collapse text-sm mt-4">
+      <table className="w-full border border-gray-300 border-collapse text-sm mt-0">
         <thead>
           <tr>
             <th colSpan={6} className="border border-gray-300 px-2 py-1 text-center font-bold bg-gray-100">
@@ -80,7 +80,7 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
   );
 
   const renderNounTable = (table: NounTable) => (
-    <table className="w-full border border-gray-300 border-collapse mt-4 text-sm">
+    <table className="w-full border border-gray-300 border-collapse mt-0 text-sm">
       <thead>
         <tr>
           <th className="border border-gray-300 px-2 py-1"></th>
@@ -113,7 +113,7 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
     };
 
     return (
-      <table className="w-full border border-gray-300 border-collapse mt-4 text-sm">
+      <table className="w-full border border-gray-300 border-collapse mt-0 text-sm">
         <thead>
           <tr>
             <th className="border border-gray-300 px-2 py-1"></th>
@@ -136,7 +136,6 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
                 </td>
 
                 {cols.map((col, idx) => {
-                  // For colspans: combine "m" + "n" → colspan=2, or "mpl" + "opl" → colspan=2
                   if ((col === 'm' && cols.includes('n')) || (col === 'mpl' && cols.includes('opl'))) {
                     if (idx % 2 === 0) {
                       return (
