@@ -1,13 +1,19 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { getCommonWords, addUserWord } from '@/lib/api';
+import { getCommonWords, addUserWord, getConjugations } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import ConjugationTable from '@/components/ConjugationTable';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type Word = {
   id: number;
   text: string;
   tag: string;
+};
+
+type ConjugationCache = {
+  [wordId: number]: any;
 };
 
 const POS_CATEGORIES: { [label: string]: string[] } = {
@@ -43,8 +49,29 @@ export default function LearnPage() {
   const [nextPageUrl, setNextPageUrl] = useState<string | null>('/api/words/common/?page=1');
   const [stopPagination, setStopPagination] = useState(false);
 
+  const [conjugationCache, setConjugationCache] = useState<ConjugationCache>({});
+  const [conjugationLoadingId, setConjugationLoadingId] = useState<number | null>(null);
+
   const observerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+
+  const handleExpandWord = async (wordId: number) => {
+    const newId = expandedWordId === wordId ? null : wordId;
+    setExpandedWordId(newId);
+
+    if (newId && !conjugationCache[newId]) {
+      try {
+        setConjugationLoadingId(newId);
+        const data = await getConjugations(newId);
+        console.log("Conjugation data for wordId", newId, data);
+        setConjugationCache((prev) => ({ ...prev, [newId]: data }));
+      } catch (err) {
+        console.error('Failed to load conjugations', err);
+      } finally {
+        setConjugationLoadingId(null);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -65,7 +92,7 @@ export default function LearnPage() {
         }
 
         if (initialFiltered.length > 0) {
-          setExpandedWordId(initialFiltered[0].id);
+          handleExpandWord(initialFiltered[0].id);
         }
       } catch (err) {
         console.error('Failed to load words', err);
@@ -143,7 +170,7 @@ export default function LearnPage() {
 
   return (
     <div className="flex flex-col items-center px-4 py-4">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-5xl">
         <div className="overflow-x-auto no-scrollbar">
           <div className="flex gap-2 px-1 py-1 min-w-max">
             {['All', ...Object.keys(POS_CATEGORIES)].map((pos) => (
@@ -159,13 +186,13 @@ export default function LearnPage() {
                   });
 
                   if (newFiltered.length > 0) {
-                    setExpandedWordId(newFiltered[0].id);
+                    handleExpandWord(newFiltered[0].id);
                   } else {
                     setExpandedWordId(null);
                   }
                 }}
                 className={`text-xs px-3 py-1 rounded-full whitespace-nowrap cursor-pointer select-none ${
-                  selectedPOS === pos ? 'bg-gray-400 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                  selectedPOS === pos ? 'bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
                 }`}
               >
                 {pos === 'All'
@@ -195,13 +222,12 @@ export default function LearnPage() {
             return (
               <li
                 key={word.id}
-                className="border-t border-gray-300 cursor-pointer"
-                onClick={() => {
-                  const newId = expandedWordId === word.id ? null : word.id;
-                  setExpandedWordId(newId);
-                }}
+                className="border-t border-gray-300"
               >
-                <div className="flex items-center justify-between gap-3 p-2 hover:bg-gray-100">
+                <div
+                  className="flex items-center justify-between gap-3 p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleExpandWord(word.id)}
+                >
                   <div className="flex items-center gap-2">
                     <div className={`text-xs font-semibold w-16 text-center py-1 rounded text-white ${posColor}`}>
                       {posLabel}
@@ -230,7 +256,25 @@ export default function LearnPage() {
                   </div>
                 </div>
                 {isExpanded && (
-                  <div className="bg-gray-50 px-6 py-4 text-sm text-gray-600">Placeholder</div>
+                  <div className="bg-gray-50 px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-row gap-6">
+                      {/* Left side placeholder/summary */}
+                      <div className="w-1/2 text-sm text-gray-600">
+                        <p className="italic">Placeholder</p>
+                      </div>
+
+                      {/* Right side: conjugation table */}
+                      <div className="w-1/2 overflow-x-auto">
+                        {conjugationLoadingId === word.id ? (
+                          <LoadingSpinner size={4} color="text-black" />
+                        ) : conjugationCache[word.id] ? (
+                          <ConjugationTable data={conjugationCache[word.id]} />
+                        ) : (
+                          <div className="text-sm text-red-500">Failed to load conjugation</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </li>
             );

@@ -222,6 +222,14 @@ export async function submitAnswers(payload: AnswerSubmission) {
     body: JSON.stringify(payload),
   });
 
-  if (!ok) throw new Error('Failed to get feedback');
+  if (!ok) throw new Error('Failed submit answers');
+  return data;
+}
+
+export async function getConjugations(wordId: number) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/words/${wordId}/conjugations/`, {
+    method: 'GET',
+  });
+  if (!ok) throw new Error('Failed to get conjugations');
   return data;
 }
