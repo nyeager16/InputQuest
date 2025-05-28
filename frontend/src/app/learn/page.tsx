@@ -5,6 +5,7 @@ import YouTube from 'react-youtube';
 import { getCommonWords, addUserWord, getConjugations, getLearnData } from '@/lib/api';
 import ConjugationTable from '@/components/ConjugationTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import PronunciationGuide from '@/components/PronunciationGuide';
 
 type Word = {
   id: number;
@@ -56,12 +57,15 @@ export default function LearnPage() {
   const [learnDataLoadingId, setLearnDataLoadingId] = useState<number | null>(null);
   const [videoTimestamps, setVideoTimestamps] = useState<{ [wordId: number]: number }>({});
 
+  const [showPronunciationId, setShowPronunciationId] = useState<number | null>(null);
+
   const observerRef = useRef<HTMLDivElement | null>(null);
   const playerRefs = useRef<{ [wordId: number]: any }>({});
 
   const handleExpandWord = async (wordId: number) => {
     const newId = expandedWordId === wordId ? null : wordId;
     setExpandedWordId(newId);
+    setShowPronunciationId(null);
 
     if (newId && !conjugationCache[newId]) {
       try {
@@ -234,6 +238,8 @@ export default function LearnPage() {
             const posLabel = getPOSLabel(word.tag);
             const posColor = POS_COLORS[posLabel] || 'bg-gray-500';
             const isExpanded = expandedWordId === word.id;
+            const learnData = learnDataCache[word.id];
+            const currentInstance = learnData?.instances?.[videoTimestamps[word.id] || 0];
 
             return (
               <li key={word.id} className="border-t border-gray-300">
@@ -254,23 +260,30 @@ export default function LearnPage() {
                 </div>
 
                 {isExpanded && (
-                  <div className="bg-gray-50 px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-gray-50 px-6 py-4 space-y-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="text-center space-y-2">
+                      <p className="text-lg italic">{learnData?.definition || '...'}</p>
+                      <div className="flex justify-center">
+                        <PronunciationGuide language="pl" word={word.text} />
+                      </div>
+                    </div>
+
                     <div className="flex flex-row gap-6">
-                      {/* Left Side */}
+                      {/* Left side: video and button */}
                       <div className="w-1/2 text-sm text-gray-700 space-y-3">
                         {learnDataLoadingId === word.id ? (
                           <LoadingSpinner size={4} color="text-black" />
-                        ) : learnDataCache[word.id] ? (
+                        ) : learnData ? (
                           <>
-                            <p className="text-center italic">{learnDataCache[word.id].definition}</p>
                             <div className="relative pt-[56.25%] w-full">
                               <div className="absolute top-0 left-0 w-full h-full">
                                 <YouTube
-                                  videoId={learnDataCache[word.id].video_url}
+                                  videoId={learnData.video_url}
                                   onReady={(event) => {
                                     playerRefs.current[word.id] = event.target;
-                                    const start = learnDataCache[word.id].instance_starts[videoTimestamps[word.id] || 0];
-                                    event.target.seekTo(start, true);
+                                    if (currentInstance) {
+                                      event.target.seekTo(currentInstance.start, true);
+                                    }
                                   }}
                                   opts={{
                                     width: '100%',
@@ -279,28 +292,28 @@ export default function LearnPage() {
                                       autoplay: 1,
                                     },
                                   }}
-                                  className="w-full h-full"
                                 />
                               </div>
                             </div>
-                            <button
-                              className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                              onClick={() => {
-                                const times = learnDataCache[word.id].instance_starts;
-                                const nextIndex = ((videoTimestamps[word.id] || 0) + 1) % times.length;
-                                playerRefs.current[word.id]?.seekTo(times[nextIndex], true);
-                                setVideoTimestamps((prev) => ({ ...prev, [word.id]: nextIndex }));
-                              }}
-                            >
-                              Skip to "{word.text}"
-                            </button>
+                            {currentInstance && (
+                              <button
+                                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                                onClick={() => {
+                                  const nextIndex = ((videoTimestamps[word.id] || 0) + 1) % learnData.instances.length;
+                                  playerRefs.current[word.id]?.seekTo(learnData.instances[nextIndex].start, true);
+                                  setVideoTimestamps((prev) => ({ ...prev, [word.id]: nextIndex }));
+                                }}
+                              >
+                                Skip to "{currentInstance.word__text}"
+                              </button>
+                            )}
                           </>
                         ) : (
-                          <p className="text-red-500">Failed to load definition</p>
+                          <p className="text-red-500">Failed to load video</p>
                         )}
                       </div>
 
-                      {/* Right Side */}
+                      {/* Right side: conjugation table */}
                       <div className="w-1/2 overflow-x-auto">
                         {conjugationLoadingId === word.id ? (
                           <LoadingSpinner size={4} color="text-black" />

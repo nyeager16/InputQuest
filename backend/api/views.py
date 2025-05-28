@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticate
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view, permission_classes
 from django.utils.timezone import now
-from django.db.models import Q, Count, Max
+from django.db.models import Q, Count
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from fsrs import Scheduler, Rating
@@ -422,15 +422,16 @@ def learn_word(request, word_id):
         }, status=status.HTTP_200_OK)
 
     # Get all instance start times for the relevant words in this video
-    starts = list(
+    instances = list(
         WordInstance.objects
         .filter(word_id__in=relevant_word_ids, video=video)
+        .select_related('word')
         .order_by('start')
-        .values_list('start', flat=True)
+        .values('start', 'word__text')
     )
 
     return Response({
         "definition": definition_text,
         "video_url": video.url,
-        "instance_starts": starts
+        "instances": instances
     }, status=status.HTTP_200_OK)
