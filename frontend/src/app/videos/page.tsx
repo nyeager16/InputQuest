@@ -189,7 +189,7 @@ export default function VideosPage() {
     <div ref={containerRef} className="flex h-full relative select-none">
       {prefsLoading ? (
         <div className="flex justify-center items-center h-full w-full">
-          <LoadingSpinner size={4} color="text-black" />
+          <LoadingSpinner size={8} color="text-black" />
         </div>
       ) : (
         <>
@@ -249,9 +249,23 @@ export default function VideosPage() {
               </div>
               <div className="flex-1 overflow-y-auto">
                 {useGrid ? (
-                  <VideoGrid videos={videos} loading={loading} selectedVideoId={selected?.video.id ?? null} onSelect={setSelected} sentinelRef={sentinelRef} />
+                  <VideoGrid videos={videos}
+                  loading={loading}
+                  selectedVideoId={selected?.video.id ?? null}
+                  onSelect={(video) =>
+                    setSelected((current) => (current?.video.id === video.video.id ? null : video))
+                  }
+                  sentinelRef={sentinelRef}
+                  />
                 ) : (
-                  <VideoList videos={videos} loading={loading} selectedVideoId={selected?.video.id ?? null} onSelect={setSelected} sentinelRef={sentinelRef} />
+                  <VideoList videos={videos}
+                  loading={loading}
+                  selectedVideoId={selected?.video.id ?? null}
+                  onSelect={(video) =>
+                    setSelected((current) => (current?.video.id === video.video.id ? null : video))
+                  }
+                  sentinelRef={sentinelRef}
+                  />
                 )}
               </div>
             </div>

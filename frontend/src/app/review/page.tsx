@@ -1,7 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useEffect, useState, useCallback } from 'react';
-import { getUserReviews, submitReview } from '@/lib/api'; // Make sure path is correct
+import { getUserReviews, submitReview } from '@/lib/api';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type Flashcard = {
   id: number;
@@ -11,10 +14,19 @@ type Flashcard = {
 };
 
 export default function ReviewPage() {
+  const { data: userPrefs, loading: authLoading } = useUserPreferences();
+  const router = useRouter();
+
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !userPrefs) {
+      router.replace('/login?next=/review');
+    }
+  }, [authLoading, userPrefs, router]);
 
   useEffect(() => {
     async function fetchFlashcards() {
@@ -58,7 +70,13 @@ export default function ReviewPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  if (loading) return <div className="p-4 text-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner size={8} color="text-black" />
+      </div>
+    );
+  
   if (currentIndex >= flashcards.length) return <div className="p-4 text-center">New flashcards will appear when they are due</div>;
 
   const card = flashcards[currentIndex];

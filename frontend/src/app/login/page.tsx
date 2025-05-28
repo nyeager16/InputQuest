@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { loginUser } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 
@@ -9,9 +9,13 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { refresh } = useUserPreferences();
+
+  const nextParam = searchParams.get('next');
+  const next = nextParam && nextParam.startsWith('/') ? nextParam : '/';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,7 +32,7 @@ export default function LoginPage() {
       localStorage.setItem('access', userData.token.access);
       localStorage.setItem('refresh', userData.token.refresh);
       await refresh();
-      router.push('/');
+      router.replace(next);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {

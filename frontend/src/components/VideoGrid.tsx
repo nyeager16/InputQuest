@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { VideoWithScore } from '@/lib/api';
 import ScoreBox from './ScoreBox';
 
@@ -17,30 +18,34 @@ export default function VideoGrid({ videos, loading, selectedVideoId, onSelect, 
         return (
           <div
             key={item.video.id}
-            className={`rounded overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition ${
+            className={`flex flex-col rounded overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition ${
               isSelected ? 'ring-2 ring-blue-500' : ''
             }`}
             onClick={() => onSelect(item)}
           >
-            <div className="w-full aspect-video bg-gray-200">
-              <img
+            <div className="w-full aspect-video relative bg-gray-200">
+              <Image
                 src={`https://img.youtube.com/vi/${item.video.url}/hqdefault.jpg`}
                 alt={item.video.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
-            <div className="p-2">
-              <h3 className="text-sm font-medium text-gray-900 line-clamp-2">
-                {item.video.title}
-              </h3>
-              <p className="text-xs text-gray-600 line-clamp-1">
-                {item.video.channel.name}
-              </p>
-              <div className="mt-1">
+            <div className="flex flex-col flex-1 p-2 justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 line-clamp-2">
+                  {item.video.title}
+                </h3>
+                <p className="text-xs text-gray-600 line-clamp-1">
+                  {item.video.channel.name}
+                </p>
+              </div>
+              <div className="mt-2">
                 <ScoreBox score={item.score} />
               </div>
             </div>
           </div>
+
         );
       })}
       <div ref={sentinelRef} className="col-span-full" />

@@ -39,7 +39,7 @@ const UserPreferencesContext = createContext<ContextType>({
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true); // Start loading
@@ -48,9 +48,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
       setUserPrefs(data);
     } catch (e) {
       console.error('Failed to refresh preferences', e);
-      setUserPrefs(null); // Treat unauthenticated users gracefully
+      setUserPrefs(null); // Unauthenticated users are null
     } finally {
-      setLoading(false); // Done loading
+      setLoading(false);
     }
   }, []);
 

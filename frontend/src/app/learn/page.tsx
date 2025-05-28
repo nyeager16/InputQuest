@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import YouTube from 'react-youtube';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { getCommonWords, addUserWord, getConjugations, getLearnData } from '@/lib/api';
+import YouTube from 'react-youtube';
 import ConjugationTable from '@/components/ConjugationTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PronunciationGuide from '@/components/PronunciationGuide';
@@ -42,6 +43,7 @@ const POS_COLORS: { [label: string]: string } = {
 };
 
 export default function LearnPage() {
+  const { data: userPrefs } = useUserPreferences();
   const [words, setWords] = useState<Word[]>([]);
   const [selectedPOS, setSelectedPOS] = useState<string>('All');
   const [expandedWordId, setExpandedWordId] = useState<number | null>(null);
@@ -57,15 +59,12 @@ export default function LearnPage() {
   const [learnDataLoadingId, setLearnDataLoadingId] = useState<number | null>(null);
   const [videoTimestamps, setVideoTimestamps] = useState<{ [wordId: number]: number }>({});
 
-  const [showPronunciationId, setShowPronunciationId] = useState<number | null>(null);
-
   const observerRef = useRef<HTMLDivElement | null>(null);
   const playerRefs = useRef<{ [wordId: number]: any }>({});
 
   const handleExpandWord = async (wordId: number) => {
     const newId = expandedWordId === wordId ? null : wordId;
     setExpandedWordId(newId);
-    setShowPronunciationId(null);
 
     if (newId === null) return;
 
@@ -179,6 +178,10 @@ export default function LearnPage() {
   };
 
   const handleAdd = async (wordId: number) => {
+    if (!userPrefs) {
+      alert('Create an account to manage your vocab');
+      return;
+    }
     try {
       await addUserWord(wordId);
       setWords((prevWords) => prevWords.filter((word) => word.id !== wordId));

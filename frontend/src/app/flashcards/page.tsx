@@ -1,19 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import FlashcardList from '@/components/FlashcardList';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { getUserWords, getDefinition, saveDefinition, deleteUserWords } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 export default function HomePage() {
+  const router = useRouter();
+  const { data: userPrefs, loading: authLoading } = useUserPreferences();
+
   const [cards, setCards] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const [definition, setDefinition] = useState<string>('');
   const [loadingDef, setLoadingDef] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: userPrefs } = useUserPreferences();
+  useEffect(() => {
+    if (!authLoading && !userPrefs) {
+      router.replace('/login?next=/flashcards');
+    }
+  }, [authLoading, userPrefs, router]);
 
   useEffect(() => {
     setCards([]);

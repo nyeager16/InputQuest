@@ -7,9 +7,7 @@ interface PronunciationGuideProps {
 
 const pronunciationMap: Record<string, Record<string, string>> = {
   pl: {
-    a: 'test1',
-    b: 'test2',
-    // Add more mappings as needed
+    aaa: 'test1',
   },
 };
 
@@ -33,6 +31,7 @@ const PronunciationGuide: FC<PronunciationGuideProps> = ({ language, word }) => 
         </div>
         {isOpen && (
           <div className="bg-gray-100 px-4 py-3 space-y-1 border-t border-gray-300">
+            Coming soon
             {word.split('').map((char, index) => {
               const guide = pronunciationMap[language][char];
               if (!guide) return null;
@@ -41,7 +40,7 @@ const PronunciationGuide: FC<PronunciationGuideProps> = ({ language, word }) => 
                   /{char}/: {guide}
                 </p>
               );
-            })}
+            })} 
           </div>
         )}
       </div>
