@@ -8,4 +8,3 @@ backend/data/*
 backend/api/migrations/*
 app/nn_srs/data/*
 TODO.md
-frontend/public/flags/*
