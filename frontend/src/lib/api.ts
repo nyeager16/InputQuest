@@ -3,6 +3,14 @@ import { fetchWithAuth } from './fetchWithAuth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+export async function getUser() {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/`, {
+    method: 'GET',
+  });
+  if (!ok) throw new Error('Failed to fetch user data');
+  return data;
+}
+
 export async function getUserPreferences() {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'GET',

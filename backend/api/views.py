@@ -365,7 +365,7 @@ def submit_answers(request):
     data = request.data
     video_id = data['video_id']
     answers = []
-    for item in data:
+    for item in data['answers']:
         question = Question.objects.get(id=item['question_id'])
         answer, _ = Answer.objects.update_or_create(
             question=question,

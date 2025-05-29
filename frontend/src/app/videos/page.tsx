@@ -283,7 +283,7 @@ export default function VideosPage() {
                     <h2 className="text-base font-semibold">{selected.video.title}</h2>
                     {videoWordsLoading ? (
                       <div className="flex justify-center items-center py-6">
-                        <LoadingSpinner size={4} color="text-white" />
+                        <LoadingSpinner size={4} color="text-black" />
                       </div>
                     ) : (
                       <>
@@ -291,7 +291,7 @@ export default function VideosPage() {
                         <div className="pt-4 space-y-4" style={{ maxWidth: '900px' }}>
                           {questionLoading ? (
                             <div className="flex justify-center items-center py-6">
-                              <LoadingSpinner size={4} color="text-white" />
+                              <LoadingSpinner size={4} color="text-black" />
                             </div>
                           ) : questions.length === 0 ? (
                             <button onClick={handleGenerateQuestions} className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100">
@@ -331,7 +331,7 @@ export default function VideosPage() {
                                 }} className="mt-4 w-full border rounded px-4 py-2 text-sm shadow bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50" disabled={submitting}>
                                   {submitting ? (
                                     <div className="flex justify-center">
-                                      <LoadingSpinner size={4} color="text-white" />
+                                      <LoadingSpinner size={4} color="text-black" />
                                     </div>
                                   ) : (
                                     'Submit Answers'

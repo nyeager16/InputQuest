@@ -33,16 +33,22 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="h-screen w-[240px] bg-slate-800 text-white p-4 flex flex-col border-r border-slate-700">
-      <h1 className="text-xl font-bold mb-4 text-center">InputQuest</h1>
-      <div className="mb-4 w-full text-center">
-        <Image
-          src={`/flags/${userPrefs?.language?.abb || 'pl'}.png`}
-          alt={`${userPrefs?.language?.abb || 'Polish'} flag`}
-          width={40}
-          height={24}
-          className="mx-auto rounded object-cover border border-black/30"
-        />
+    <div className="h-screen w-[200px] bg-slate-800 text-white p-4 flex flex-col border-r border-slate-700">
+      <Link href="/" className="mb-4 select-none text-xl font-bold text-center">
+        InputQuest
+      </Link>
+      <div className="mb-4 flex justify-center">
+        <button
+          className="px-2 py-1 rounded transition hover:bg-gray-700 flex items-center gap-2"
+        >
+          <Image
+            src={`/flags/${userPrefs?.language?.abb || 'pl'}.png`}
+            alt={`${userPrefs?.language?.name || 'Polish'} flag`}
+            width={28}
+            height={18}
+            className="rounded object-cover border border-black/30"
+          />
+        </button>
       </div>
       <nav className="flex flex-col gap-2 flex-grow">
         <Link href="/" className={linkClass('/')}>Home</Link>
