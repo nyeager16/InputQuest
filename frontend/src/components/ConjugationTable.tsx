@@ -27,50 +27,50 @@ type TableData = {
 const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
   const renderVerbTable = (table: VerbTable) => (
     <>
-      <table className="w-full border border-gray-300 border-collapse text-sm mt-0">
+      <table className="w-full border border-gray-300 border-collapse text-sm mt-0 text-center">
         <thead>
           <tr>
-            <th colSpan={3} className="border border-gray-300 px-2 py-1 text-center font-bold bg-gray-100">
+            <th colSpan={3} className="border border-gray-300 px-2 py-1 font-bold bg-gray-100 text-center">
               Present
             </th>
           </tr>
           <tr>
-            <th className="border border-gray-300 px-2 py-1"></th>
-            <th className="border border-gray-300 px-2 py-1">sg</th>
-            <th className="border border-gray-300 px-2 py-1">pl</th>
+            <th className="border border-gray-300 px-2 py-1 text-center"></th>
+            <th className="border border-gray-300 px-2 py-1 text-center">sg</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">pl</th>
           </tr>
         </thead>
         <tbody>
           {['1p', '2p', '3p'].map(row => (
             <tr key={row}>
-              <td className="border border-gray-300 px-2 py-1">{row}</td>
-              <td className="border border-gray-300 px-2 py-1">{table.present[row]?.sg?.text || ''}</td>
-              <td className="border border-gray-300 px-2 py-1">{table.present[row]?.pl?.text || ''}</td>
+              <td className="border border-gray-300 px-2 py-1 text-center">{row}</td>
+              <td className="border border-gray-300 px-2 py-1 text-center">{table.present[row]?.sg?.text || ''}</td>
+              <td className="border border-gray-300 px-2 py-1 text-center">{table.present[row]?.pl?.text || ''}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <table className="w-full border border-gray-300 border-collapse text-sm mt-0">
+      <table className="w-full border border-gray-300 border-collapse text-sm mt-0 text-center">
         <thead>
           <tr>
-            <th colSpan={6} className="border border-gray-300 px-2 py-1 text-center font-bold bg-gray-100">
+            <th colSpan={6} className="border border-gray-300 px-2 py-1 font-bold bg-gray-100 text-center">
               Past
             </th>
           </tr>
           <tr>
-            <th className="border border-gray-300 px-2 py-1"></th>
+            <th className="border border-gray-300 px-2 py-1 text-center"></th>
             {['m', 'f', 'n', 'mpl', 'opl'].map(col => (
-              <th key={col} className="border border-gray-300 px-2 py-1">{col}</th>
+              <th key={col} className="border border-gray-300 px-2 py-1 text-center">{col}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {['1p', '2p', '3p'].map(row => (
             <tr key={row}>
-              <td className="border border-gray-300 px-2 py-1">{row}</td>
+              <td className="border border-gray-300 px-2 py-1 text-center">{row}</td>
               {['m', 'f', 'n', 'mpl', 'opl'].map(col => (
-                <td key={col} className="border border-gray-300 px-2 py-1">{table.past[row]?.[col]?.text || ''}</td>
+                <td key={col} className="border border-gray-300 px-2 py-1 text-center">{table.past[row]?.[col]?.text || ''}</td>
               ))}
             </tr>
           ))}
@@ -80,20 +80,20 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
   );
 
   const renderNounTable = (table: NounTable) => (
-    <table className="w-full border border-gray-300 border-collapse mt-0 text-sm">
+    <table className="w-full border border-gray-300 border-collapse mt-0 text-sm text-center">
       <thead>
         <tr>
-          <th className="border border-gray-300 px-2 py-1"></th>
-          <th className="border border-gray-300 px-2 py-1">sg</th>
-          <th className="border border-gray-300 px-2 py-1">pl</th>
+          <th className="border border-gray-300 px-2 py-1 text-center"></th>
+          <th className="border border-gray-300 px-2 py-1 text-center">sg</th>
+          <th className="border border-gray-300 px-2 py-1 text-center">pl</th>
         </tr>
       </thead>
       <tbody>
         {Object.keys(table).map(caseName => (
           <tr key={caseName}>
-            <td className="border border-gray-300 px-2 py-1">{caseName}</td>
-            <td className="border border-gray-300 px-2 py-1">{table[caseName].sg?.text || ''}</td>
-            <td className="border border-gray-300 px-2 py-1">{table[caseName].pl?.text || ''}</td>
+            <td className="border border-gray-300 px-2 py-1 text-center">{caseName}</td>
+            <td className="border border-gray-300 px-2 py-1 text-center">{table[caseName].sg?.text || ''}</td>
+            <td className="border border-gray-300 px-2 py-1 text-center">{table[caseName].pl?.text || ''}</td>
           </tr>
         ))}
       </tbody>
@@ -104,24 +104,24 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
     const caseOrder = ['nom', 'gen', 'dat', 'acc', 'inst', 'loc', 'voc'];
     const colOrderMap: Record<string, string[]> = {
       nom: ['m', 'n', 'f', 'mpl', 'opl'],
-      gen: ['mf', 'f', 'pl'],
-      dat: ['mf', 'f', 'pl'],
+      gen: ['m', 'n', 'f', 'mpl', 'opl'],
+      dat: ['m', 'n', 'f', 'mpl', 'opl'],
       acc: ['m', 'n', 'f', 'mpl', 'opl'],
-      inst: ['mf', 'f', 'pl'],
-      loc: ['mf', 'f', 'pl'],
+      inst: ['m', 'n', 'f', 'mpl', 'opl'],
+      loc: ['m', 'n', 'f', 'mpl', 'opl'],
       voc: ['m', 'n', 'f', 'mpl', 'opl'],
     };
 
     return (
-      <table className="w-full border border-gray-300 border-collapse mt-0 text-sm">
+      <table className="w-full border border-gray-300 border-collapse mt-0 text-sm text-center">
         <thead>
           <tr>
-            <th className="border border-gray-300 px-2 py-1"></th>
-            <th className="border border-gray-300 px-2 py-1">m</th>
-            <th className="border border-gray-300 px-2 py-1">n</th>
-            <th className="border border-gray-300 px-2 py-1">f</th>
-            <th className="border border-gray-300 px-2 py-1">mpl</th>
-            <th className="border border-gray-300 px-2 py-1">opl</th>
+            <th className="border border-gray-300 px-2 py-1 text-center"></th>
+            <th className="border border-gray-300 px-2 py-1 text-center">m</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">n</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">f</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">mpl</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">opl</th>
           </tr>
         </thead>
         <tbody>
@@ -131,37 +131,41 @@ const ConjugationTable: React.FC<{ data: TableData }> = ({ data }) => {
 
             return (
               <tr key={caseName}>
-                <td className="border border-gray-300 px-2 py-1 font-semibold">
+                <td className="border border-gray-300 px-2 py-1 text-center font-semibold">
                   {caseName[0].toUpperCase() + caseName.slice(1)}
                 </td>
 
-                {cols.map((col, idx) => {
-                  if ((col === 'm' && cols.includes('n')) || (col === 'mpl' && cols.includes('opl'))) {
-                    if (idx % 2 === 0) {
-                      return (
-                        <td
-                          key={col}
-                          colSpan={2}
-                          className="border border-gray-300 px-2 py-1 conjugation-cell"
-                          data-word-id={row[col]?.id}
-                          id={`cell-${row[col]?.id}`}
-                        >
-                          {row[col]?.text || ''}
-                        </td>
-                      );
-                    } else {
+                {cols.map((col) => {
+                  let value: FormEntry | undefined;
+                  let colSpan = 1;
+
+                  if (['gen', 'dat', 'inst', 'loc'].includes(caseName)) {
+                    if (col === 'm') {
+                      value = row['mf'];
+                      colSpan = 2;
+                    } else if (col === 'n') {
                       return null;
+                    } else if (col === 'mpl') {
+                      value = row['pl'];
+                      colSpan = 2;
+                    } else if (col === 'opl') {
+                      return null;
+                    } else {
+                      value = row[col];
                     }
+                  } else {
+                    value = row[col];
                   }
 
                   return (
                     <td
                       key={col}
-                      className="border border-gray-300 px-2 py-1 conjugation-cell"
-                      data-word-id={row[col]?.id}
-                      id={`cell-${row[col]?.id}`}
+                      colSpan={colSpan}
+                      className="border border-gray-300 px-2 py-1 text-center conjugation-cell"
+                      data-word-id={value?.id}
+                      id={`cell-${value?.id}`}
                     >
-                      {row[col]?.text || ''}
+                      {value?.text || ''}
                     </td>
                   );
                 })}

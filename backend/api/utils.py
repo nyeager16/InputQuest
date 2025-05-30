@@ -1,11 +1,8 @@
 from .models import (
     Language, Word, WordInstance, UserWord, UserVideo, Video, 
-    UserPreferences, Definition, Question, Sentence, Answer, Feedback,
-    WordSet, WordSetVideoScore
+    Question, Sentence, Feedback, WordSet, WordSetVideoScore
 )
-from django.db import models, transaction
-from django.db.models import Count, Case, When, F, Q, OuterRef, Subquery, IntegerField
-from django.db.models.functions import Coalesce
+from django.db import transaction
 from django.conf import settings
 from openai import OpenAI
 import hashlib
@@ -364,7 +361,6 @@ def get_conjugation_table(word, user):
         table_type = 2
         child_words = list(Word.objects.filter(root=word)) + [word]
 
-        cases = ['nom', 'gen', 'dat', 'acc', 'inst', 'loc', 'voc']
         col_map = {
             "nom": ["m", "n", "f", "mpl", "opl"],
             "gen": ["mf", "f", "pl"],
@@ -376,14 +372,27 @@ def get_conjugation_table(word, user):
         }
         adj_table = {case: {col: {} for col in cols} for case, cols in col_map.items()}
 
+        def normalize_gender_tags(tags):
+            out = set()
+            for g in tags:
+                if g.startswith("m"):
+                    out.add("m")
+                elif g.startswith("f"):
+                    out.add("f")
+                elif g.startswith("n"):
+                    out.add("n")
+            return list(out)
+
         for w in child_words:
             parts = w.tag.split(":")
-            if len(parts) < 5 or parts[-1] != "pos":
+            if len(parts) < 4 or parts[0] != "adj":
+                continue
+            if parts[-1] != "pos":
                 continue
 
             number = parts[1]
-            genders = parts[3].split(".")
             cases_in_tag = parts[2].split(".")
+            genders = normalize_gender_tags(parts[3].split("."))
             is_user = w.id in user_words
 
             for case in cases_in_tag:
@@ -391,24 +400,25 @@ def get_conjugation_table(word, user):
                     continue
 
                 if case in ["gen", "dat", "inst", "loc"]:
-                    if number == "sg" and ("m" in genders or "n" in genders):
-                        adj_table[case]["mf"] = {"id": w.id, "text": w.text, "needs_review": is_user}
-                    if number == "sg" and "f" in genders:
-                        adj_table[case]["f"] = {"id": w.id, "text": w.text, "needs_review": is_user}
-                    if number == "pl":
+                    if number == "sg":
+                        if ("m" in genders or "n" in genders) and not adj_table[case]["mf"]:
+                            adj_table[case]["mf"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                        if "f" in genders and not adj_table[case]["f"]:
+                            adj_table[case]["f"] = {"id": w.id, "text": w.text, "needs_review": is_user}
+                    elif number == "pl" and not adj_table[case]["pl"]:
                         adj_table[case]["pl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
                 else:
                     if number == "sg":
-                        if "m" in genders:
+                        if "m" in genders and not adj_table[case]["m"]:
                             adj_table[case]["m"] = {"id": w.id, "text": w.text, "needs_review": is_user}
-                        if "n" in genders:
+                        if "n" in genders and not adj_table[case]["n"]:
                             adj_table[case]["n"] = {"id": w.id, "text": w.text, "needs_review": is_user}
-                        if "f" in genders:
+                        if "f" in genders and not adj_table[case]["f"]:
                             adj_table[case]["f"] = {"id": w.id, "text": w.text, "needs_review": is_user}
                     elif number == "pl":
-                        if "m" in genders and "f" not in genders:
+                        if "m" in genders and "f" not in genders and not adj_table[case]["mpl"]:
                             adj_table[case]["mpl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
-                        elif "m" in genders and "f" in genders:
+                        elif not adj_table[case]["opl"]:
                             adj_table[case]["opl"] = {"id": w.id, "text": w.text, "needs_review": is_user}
 
         data = {"adjective": adj_table}

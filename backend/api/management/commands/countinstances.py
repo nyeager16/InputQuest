@@ -1,29 +1,44 @@
 from django.core.management.base import BaseCommand
-from django.db.models import Count, Q, F
-from api.models import Word
+from django.db.models import Count
+from api.models import Word, WordInstance
 
 class Command(BaseCommand):
-    help = "Bulk updates instance_count for Words where root is None"
+    help = "Efficiently updates instance_count for all root words."
 
     def handle(self, *args, **kwargs):
-        # Get all root words
-        root_words = Word.objects.filter(root__isnull=True).prefetch_related('derived_words', 'wordinstance_set')
+        self.stdout.write("Counting WordInstances directly tied to root words...")
+        direct_counts = WordInstance.objects.filter(
+            word__root__isnull=True
+        ).values('word').annotate(count=Count('id'))
 
-        updated_words = []
+        self.stdout.write("Counting WordInstances of derived words (children)...")
+        indirect_counts = WordInstance.objects.filter(
+            word__root__isnull=False
+        ).values('word__root').annotate(count=Count('id'))
 
-        for word in root_words:
-            # Direct instances (wordinstance_set is reverse FK from WordInstance to Word)
-            direct_count = word.wordinstance_set.count()
+        # Build lookup dictionaries
+        direct_map = {item['word']: item['count'] for item in direct_counts}
+        indirect_map = {item['word__root']: item['count'] for item in indirect_counts}
 
-            # Indirect instances: word instances from derived_words
-            indirect_count = sum(
-                dw.wordinstance_set.count()
-                for dw in word.derived_words.all()
-            )
+        self.stdout.write("Merging counts and preparing update list...")
 
-            word.instance_count = direct_count + indirect_count
-            updated_words.append(word)
+        # Efficiently update in batches
+        updated = []
+        batch_size = 1000
+        qs = Word.objects.filter(root__isnull=True).iterator(chunk_size=batch_size)
 
-        Word.objects.bulk_update(updated_words, ['instance_count'])
+        for word in qs:
+            direct = direct_map.get(word.id, 0)
+            indirect = indirect_map.get(word.id, 0)
+            word.instance_count = direct + indirect
+            updated.append(word)
 
-        self.stdout.write(self.style.SUCCESS(f"{len(updated_words)} words updated with instance counts."))
+            if len(updated) >= batch_size:
+                Word.objects.bulk_update(updated, ['instance_count'], batch_size=batch_size)
+                updated = []
+
+        # Final flush
+        if updated:
+            Word.objects.bulk_update(updated, ['instance_count'], batch_size=batch_size)
+
+        self.stdout.write(self.style.SUCCESS("All root words updated."))
