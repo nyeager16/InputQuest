@@ -2,8 +2,11 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useUserPreferences } from '@/context/UserPreferencesContext';
 
 export default function HomePage() {
+  const { data: userPrefs, loading } = useUserPreferences();
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <div className="flex flex-col items-center justify-center h-screen px-4">
@@ -25,23 +28,25 @@ export default function HomePage() {
           A modern comprehensible input solution for language learners
         </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2, duration: 1 }}
-          className="mt-8 space-y-4 w-full max-w-xs"
-        >
-          <Link href="/signup" className="block">
-            <button className="w-full text-lg py-3 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition cursor-pointer">
-              Sign Up
-            </button>
-          </Link>
-          <Link href="/login" className="block">
-            <button className="w-full text-lg py-3 px-6 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 transition cursor-pointer">
-              Log In
-            </button>
-          </Link>
-        </motion.div>
+        {!loading && !userPrefs && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2, duration: 1 }}
+            className="mt-8 space-y-4 w-full max-w-xs"
+          >
+            <Link href="/signup" className="block">
+              <button className="w-full text-lg py-3 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition cursor-pointer">
+                Sign Up
+              </button>
+            </Link>
+            <Link href="/login" className="block">
+              <button className="w-full text-lg py-3 px-6 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 transition cursor-pointer">
+                Log In
+              </button>
+            </Link>
+          </motion.div>
+        )}
       </div>
 
       {/* Info Section remains unchanged */}

@@ -15,7 +15,7 @@ export default function LoginClient() {
   const { refresh } = useUserPreferences();
 
   const nextParam = searchParams.get('next');
-  const next = nextParam && nextParam.startsWith('/') ? nextParam : '/';
+  const next = nextParam && nextParam.startsWith('/') ? nextParam : '/videos';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
