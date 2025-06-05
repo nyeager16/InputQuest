@@ -107,10 +107,11 @@ export default function VideosPage() {
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) fetchVideos();
     }, { rootMargin: '100px' });
+
     const current = sentinelRef.current;
     observer.observe(current);
     return () => current && observer.unobserve(current);
-  }, [fetchVideos]);
+  }, [fetchVideos, useGrid]);
 
   useEffect(() => {
     if (selected) {
