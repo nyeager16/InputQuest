@@ -13,6 +13,7 @@ class Word(models.Model):
     tag = models.CharField(max_length=60, null=True, db_index=True)
     wtype = models.CharField(max_length=60, null=True, db_index=True)
     abb = models.CharField(max_length=40, null=True, db_index=True)
+    ipa = models.CharField(max_length=40,null=True, default=None)
     root = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, db_index=True, related_name='derived_words')
     instance_count = models.IntegerField(default=0)
 

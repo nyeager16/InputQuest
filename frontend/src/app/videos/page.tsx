@@ -20,7 +20,7 @@ export default function VideosPage() {
   const [leftWidthPercent, setLeftWidthPercent] = useState(100);
   const [comprehensionRange, setComprehensionRange] = useState({ min: 0, max: 100 });
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
-  const [useGrid, setUseGrid] = useState(false);
+  const [useGrid, setUseGrid] = useState(true);
   const [videoWords, setVideoWords] = useState<string[]>([]);
   const [videoWordsLoading, setVideoWordsLoading] = useState(false);
   const [videos, setVideos] = useState<VideoWithScore[]>([]);
@@ -49,7 +49,7 @@ export default function VideosPage() {
       setUseGrid(userPrefs.grid_view);
     } else {
       setComprehensionRange({ min: 0, max: 100 });
-      setUseGrid(false);
+      setUseGrid(true);
     }
   }, [userPrefs, prefsLoading]);
 
@@ -218,11 +218,11 @@ export default function VideosPage() {
                         console.error('Failed to update grid_view', err);
                         setUseGrid(!newGridState);
                       }
-                    }} className="text-sm px-2 py-1 border rounded bg-white shadow">
+                    }} className="text-sm px-2 py-1 border rounded bg-white shadow cursor-pointer">
                       {useGrid ? 'List View' : 'Grid View'}
                     </button>
                     {showRight && (
-                      <button onClick={handleHideLeft} disabled={!selected} className="text-sm px-2 py-1 border rounded bg-white shadow disabled:opacity-50">
+                      <button onClick={handleHideLeft} disabled={!selected} className="text-sm px-2 py-1 border rounded bg-white shadow disabled:opacity-50 cursor-pointer">
                         Hide
                       </button>
                     )}
