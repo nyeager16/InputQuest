@@ -8,12 +8,12 @@ class Language(models.Model):
     abb = models.CharField(max_length=2)
 
 class Word(models.Model):
-    text = models.CharField(max_length=40, db_index=True)
+    text = models.CharField(max_length=80, db_index=True)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, db_index=True)
-    tag = models.CharField(max_length=60, null=True, db_index=True)
+    tag = models.CharField(max_length=120, null=True, db_index=True)
     wtype = models.CharField(max_length=60, null=True, db_index=True)
     abb = models.CharField(max_length=40, null=True, db_index=True)
-    ipa = models.CharField(max_length=40,null=True, default=None)
+    ipa = models.CharField(max_length=80,null=True, default=None)
     root = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, db_index=True, related_name='derived_words')
     instance_count = models.IntegerField(default=0)
 

@@ -171,35 +171,40 @@ class Command(BaseCommand):
                 start = floor(sec['start'])
                 end = ceil(start+sec['duration'])
                 text = sec['text']
-                text = text.replace("[Muzyka]", "").replace("[muzyka]", "").strip()
-                text = text.translate(str.maketrans('','',string.punctuation))
-                text_pos = classify_polish_pos(text)
-                all_words = text.lower().split()
-                existing_words = set(Word.objects.filter(text__in=all_words).values_list('text', flat=True))
-                for i in range(len(all_words)):
-                    word = all_words[i]
-                    
-                    stanza_pos = text_pos[i][1]
 
-                    if word in existing_words:
-                        datawords = Word.objects.filter(text=word)
+                if language=='pl':
+                    text = text.replace("[Muzyka]", "").replace("[muzyka]", "").strip()
+                    text = text.translate(str.maketrans('','',string.punctuation))
+                    text_pos = classify_polish_pos(text)
+                    all_words = text.lower().split()
+                    existing_words = set(Word.objects.filter(text__in=all_words).values_list('text', flat=True))
+                    for i in range(len(all_words)):
+                        word = all_words[i]
+                        
+                        stanza_pos = text_pos[i][1]
 
-                        if datawords.count() == 1:
-                            wordinstances.append(WordInstance(word=datawords.first(), 
-                                                                video=vid, start=start, end=end))
-                        else:
-                            dataword = next((dw for dw in datawords if dw.tag and dw.tag == stanza_pos), None)
-                            if dataword:
-                                wordinstances.append(WordInstance(word=dataword, 
+                        if word in existing_words:
+                            datawords = Word.objects.filter(text=word)
+
+                            if datawords.count() == 1:
+                                wordinstances.append(WordInstance(word=datawords.first(), 
                                                                     video=vid, start=start, end=end))
                             else:
-                                dataword = best_match(stanza_pos, datawords)
+                                dataword = next((dw for dw in datawords if dw.tag and dw.tag == stanza_pos), None)
                                 if dataword:
                                     wordinstances.append(WordInstance(word=dataword, 
                                                                         video=vid, start=start, end=end))
                                 else:
-                                    wordinstances.append(WordInstance(word=datawords.first(), 
-                                                                        video=vid, start=start, end=end))
+                                    dataword = best_match(stanza_pos, datawords)
+                                    if dataword:
+                                        wordinstances.append(WordInstance(word=dataword, 
+                                                                            video=vid, start=start, end=end))
+                                    else:
+                                        wordinstances.append(WordInstance(word=datawords.first(), 
+                                                                            video=vid, start=start, end=end))
+                elif language == 'de':
+
+                    return
         Video.objects.bulk_create(videos)
         Sentence.objects.bulk_create(sentences)
         WordInstance.objects.bulk_create(wordinstances)

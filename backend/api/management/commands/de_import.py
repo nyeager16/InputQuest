@@ -5,7 +5,7 @@ from api.models import Word, Language
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
-    help = 'Extracts and writes filtered JSON rows for German pronouns from a Wiktextract JSONL file.'
+    help = 'Imports german linguistic data'
 
     def add_arguments(self, parser):
         parser.add_argument('file_path', type=str, help='Path to de-extract.jsonl')
@@ -27,44 +27,44 @@ class Command(BaseCommand):
             name=langname, abb=lang
         )
 
-        output_path = os.path.join(os.path.dirname(file_path), 'german_verbs_filtered.jsonl')
+        with open(file_path, 'r', encoding='utf-8') as f_in:
+            for line in f_in:
+                if len(words) > batchsize:                        
+                    Word.objects.bulk_create(words)
+                    words.clear()
+                obj = json.loads(line)
 
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f_in, open(output_path, 'w', encoding='utf-8') as f_out:
-                for line in f_in:
-                    obj = json.loads(line)
+                pos = obj.get('pos')
+                text = obj.get('word')
+                forms = obj.get('forms', [])
+                ipa = obj.get('ipa', None)
 
-                    lang_code = obj.get('lang_code')
-                    lang = obj.get('lang')
-                    pos = obj.get('pos')
-                    text = obj.get('word')
-                    ipa = obj.get('ipa')
-                    forms = obj.get('forms', [])
+                # infinitive verbs
+                if forms and pos == 'verb' and text.endswith('n'):
+                    inf_word = Word(text=text, language=de, tag='inf', wtype=None, abb=None, root=None, ipa=ipa)
+                    inf_word.save()
+                    # conjugations
+                    for form in forms:
+                        form_text = form['form'].split()[-1]
+                        tags = ':'.join(form.get('tags', []))
+                        form_word = Word(text=form_text, language=de, tag=tags, wtype=None, abb=None, root=inf_word, ipa=None)
+                        words.append(form_word)
 
-                    # infinitive verbs
-                    if (lang_code == 'de' or lang == 'Deutsch') and forms and pos == 'verb':
-                        inf_word = Word(text=text, language=de, tag=None, wtype=None, abb=None, root=None, ipa=ipa)
-                        filtered = {
-                            'word': text,
-                            'pos': pos,
-                            'ipa': next((s.get('ipa') for s in obj.get('sounds', []) if 'ipa' in s), None),
-                            'forms': forms
-                        }
+                else:
+                    root_word = Word(text=text, language=de, tag=None, wtype=None, abb=None, root=None, ipa=ipa)
+                    root_word.save()
+                    for form in forms:
+                        form_text = form['form'].split()[-1]
+                        tags = ':'.join(form.get('tags', []))
+                        form_word = Word(text=form_text, language=de, tag=tags, wtype=None, abb=None, root=root_word, ipa=None)
+                        words.append(form_word)
 
-                        # Flatten tags from all senses
-                        sense_tags = []
-                        for sense in obj.get('senses', []):
-                            sense_tags.extend(sense.get('tags', []))
-                        filtered['tags'] = list(set(sense_tags)) if sense_tags else []
+        if words:
+            Word.objects.bulk_create(words)
 
-                        json.dump(filtered, f_out, ensure_ascii=False)
-                        f_out.write('\n')
-
-        except Exception as e:
-            raise CommandError(f"Error processing file: {e}")
 
 
 
 '''
-poetry run python manage.py de_import "data/de-extract.jsonl"
+poetry run python manage.py de_import "data/de_cleaned.jsonl"
 '''

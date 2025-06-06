@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
-DEBUG = True
+DEBUG = os.getenv('DEBUG') == 'True'
 
 # Application definition
 
