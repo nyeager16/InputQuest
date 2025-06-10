@@ -28,7 +28,11 @@ async function refreshAccessToken(): Promise<string> {
       body: JSON.stringify({ refresh: refreshToken }),
     });
 
-    if (!res.ok) throw new Error('Failed to refresh token');
+    if (!res.ok) {
+      localStorage.removeItem('access');
+      localStorage.removeItem('refresh');
+      throw new Error('Failed to refresh token');
+    }
 
     const data = await res.json();
     localStorage.setItem('access', data.access);
@@ -62,7 +66,7 @@ export async function fetchWithAuth(
       },
     });
 
-    if (response.status === 401) {
+    if (response.status === 401 && accessToken) {
       try {
         accessToken = await refreshAccessToken();
         response = await fetch(input, {
