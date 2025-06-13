@@ -58,6 +58,7 @@ export default function LearnPage() {
   const [learnDataCache, setLearnDataCache] = useState<{ [wordId: number]: any }>({});
   const [learnDataLoadingId, setLearnDataLoadingId] = useState<number | null>(null);
   const [videoTimestamps, setVideoTimestamps] = useState<{ [wordId: number]: number }>({});
+  const [playerReady, setPlayerReady] = useState<{ [wordId: number]: boolean }>({});
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const playerRefs = useRef<{ [wordId: number]: any }>({});
@@ -72,7 +73,6 @@ export default function LearnPage() {
       try {
         setConjugationLoadingId(newId);
         const data = await getConjugations(newId);
-        console.log("Conjugation data for wordId", newId, data);
         setConjugationCache((prev) => ({ ...prev, [newId]: data }));
       } catch (err) {
         console.error('Failed to load conjugations', err);
@@ -250,7 +250,8 @@ export default function LearnPage() {
             const posColor = POS_COLORS[posLabel] || 'bg-gray-500';
             const isExpanded = expandedWordId === word.id;
             const learnData = learnDataCache[word.id];
-            const currentInstance = learnData?.instances?.[videoTimestamps[word.id] || 0];
+            const currentIndex = videoTimestamps[word.id] || 0;
+            const currentInstance = learnData?.instances?.[currentIndex];
 
             return (
               <li key={word.id} className="border-t border-gray-300">
@@ -264,7 +265,7 @@ export default function LearnPage() {
                       e.stopPropagation();
                       handleAdd(word.id);
                     }}
-                    className="bg-green-500 text-white px-3 py-1 text-sm hover:bg-green-600 rounded-sm transition-colors"
+                    className="bg-green-500 text-white px-3 py-1 text-sm hover:bg-green-600 rounded-sm transition-colors cursor-pointer"
                   >
                     Add
                   </button>
@@ -281,12 +282,8 @@ export default function LearnPage() {
                     </div>
 
                     <div className="flex flex-row gap-6">
-                      {/* Left side: video and button */}
-                      <div
-                        className={`w-1/2 text-sm text-gray-700 space-y-3 flex flex-col ${
-                          conjugationCache[word.id]?.conjugation_table ? 'max-h-[500px] overflow-y-auto' : ''
-                        }`}
-                      >
+                      {/* Left side: video and controls */}
+                      <div className="w-1/2 text-sm text-gray-700 space-y-3 flex flex-col">
                         {learnDataLoadingId === word.id ? (
                           <LoadingSpinner size={4} color="text-black" />
                         ) : learnData ? (
@@ -296,28 +293,51 @@ export default function LearnPage() {
                                 videoId={learnData.video_url}
                                 onReady={(event) => {
                                   playerRefs.current[word.id] = event.target;
+                                  setPlayerReady((prev) => ({ ...prev, [word.id]: true }));
                                 }}
                                 opts={{
                                   width: '100%',
                                   height: '100%',
-                                  playerVars: {
-                                    autoplay: 0,
-                                  },
+                                  playerVars: { autoplay: 0 }
                                 }}
                                 className="absolute top-0 left-0 w-full h-full"
                               />
                             </div>
-                            {currentInstance && (
-                              <button
-                                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                                onClick={() => {
-                                  const nextIndex = ((videoTimestamps[word.id] || 0) + 1) % learnData.instances.length;
-                                  playerRefs.current[word.id]?.seekTo(learnData.instances[nextIndex].start, true);
-                                  setVideoTimestamps((prev) => ({ ...prev, [word.id]: nextIndex }));
-                                }}
-                              >
-                                Skip to "{currentInstance.word__text}"
-                              </button>
+                            {currentInstance && playerReady[word.id] && (
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded cursor-pointer"
+                                  onClick={() => {
+                                    const total = learnData.instances.length;
+                                    const prevIndex = (currentIndex - 1 + total) % total;
+                                    setVideoTimestamps((prevMap) => ({ ...prevMap, [word.id]: prevIndex }));
+                                    const newTimestamp = learnData.instances[prevIndex].start;
+                                    playerRefs.current[word.id]?.seekTo(newTimestamp, true);
+                                  }}
+                                >
+                                  ←
+                                </button>
+                                <button
+                                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded cursor-pointer"
+                                  onClick={() => {
+                                    playerRefs.current[word.id]?.seekTo(currentInstance.start, true);
+                                  }}
+                                >
+                                  Skip to "{currentInstance.word__text}"
+                                </button>
+                                <button
+                                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded cursor-pointer"
+                                  onClick={() => {
+                                    const total = learnData.instances.length;
+                                    const nextIndex = (currentIndex + 1) % total;
+                                    setVideoTimestamps((prevMap) => ({ ...prevMap, [word.id]: nextIndex }));
+                                    const newTimestamp = learnData.instances[nextIndex].start;
+                                    playerRefs.current[word.id]?.seekTo(newTimestamp, true);
+                                  }}
+                                >
+                                  →
+                                </button>
+                              </div>
                             )}
                           </>
                         ) : (
@@ -325,8 +345,7 @@ export default function LearnPage() {
                         )}
                       </div>
 
-
-                      {/* Right side: conjugation table */}
+                      {/* Right side: conjugation */}
                       <div className="w-1/2 overflow-x-auto">
                         {conjugationLoadingId === word.id ? (
                           <LoadingSpinner size={4} color="text-black" />

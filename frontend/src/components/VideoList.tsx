@@ -17,8 +17,8 @@ export default function VideoList({ videos, loading, selectedVideoId, onSelect, 
         return (
           <li
             key={item.video.id}
-            className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 ${
-              isSelected ? 'bg-blue-100' : ''
+            className={`flex items-center gap-3 p-2 rounded cursor-pointer ${
+              isSelected ? 'bg-blue-100' : 'hover:bg-gray-100'
             }`}
             onClick={() => onSelect(item)}
           >

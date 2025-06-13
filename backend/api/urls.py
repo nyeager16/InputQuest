@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     current_user, user_preferences, user_login, user_signup, learn_word,
     common_words, user_words, get_user_reviews, submit_review, conjugations,
-    definitions, user_words_del, get_videos, video_words, get_questions, submit_answers
+    definitions, user_words_del, get_videos, video_words, get_questions, 
+    submit_answers, user_words_conjugations
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -22,6 +23,7 @@ urlpatterns = [
 
     path('userwords/<int:id>/update/<int:rating>/', submit_review, name='submit-review'),
     path('userwords/delete/', user_words_del, name='user-words-del'),
+    path('userwords/conjugations/', user_words_conjugations, name='user_words_conjugations'),
 
     path('definitions/<int:word_id>/', definitions, name='definitions'),
 

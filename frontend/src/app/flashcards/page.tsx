@@ -4,16 +4,25 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FlashcardList from '@/components/FlashcardList';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { getUserWords, getDefinition, saveDefinition, deleteUserWords } from '@/lib/api';
+import FlashcardConjugations from '@/components/FlashcardConjugations';
+import { getUserWords, getDefinition, saveDefinition, deleteUserWords, getConjugations } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 
-export default function HomePage() {
+export default function MyVocabPage() {
   const router = useRouter();
   const { data: userPrefs, loading: authLoading } = useUserPreferences();
 
   const [cards, setCards] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const [definition, setDefinition] = useState<string>('');
+  const [conjugationData, setConjugationData] = useState<{
+    table_type: number;
+    conjugation_table: {
+      verb?: VerbTable;
+      noun?: NounTable;
+      adjective?: AdjTable;
+    };
+  } | null>(null);
   const [loadingDef, setLoadingDef] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +54,11 @@ export default function HomePage() {
     try {
       const def = await getDefinition(card.word.id);
       setDefinition(def.text || '');
+
+      const conj = await getConjugations(card.word.id);
+      setConjugationData(conj);
     } catch (err) {
-      setError('Failed to load definition.');
+      setError('Failed to load definition or conjugation.');
     } finally {
       setLoadingDef(false);
     }
@@ -87,7 +99,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-1 overflow-hidden h-full">
-      <div className="mr-6 h-full">
+      <div className="mr-2 h-full">
         <FlashcardList
           cards={cards}
           onWordClick={handleWordClick}
@@ -105,19 +117,22 @@ export default function HomePage() {
               <p className="text-red-500">{error}</p>
             ) : (
               <>
-                <div className="max-w-xl w-full">
+                <div className="max-w-xl w-full mb-4">
                   <textarea
-                    className="w-full h-40 p-2 border rounded mb-4"
+                    className="w-full h-40 p-2 border rounded mb-2"
                     value={definition}
                     onChange={handleDefinitionChange}
                   />
                   <button
                     onClick={handleSaveDefinition}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
                   >
                     Save
                   </button>
                 </div>
+                {conjugationData ? (
+                  <FlashcardConjugations data={conjugationData} />
+                ) : null}
               </>
             )}
           </div>

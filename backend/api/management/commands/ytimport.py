@@ -185,7 +185,20 @@ class Command(BaseCommand):
 
                         if word in existing_words:
                             datawords = Word.objects.filter(text=word)
+                            
+                            # edge cases
+                            if word == 'też':
+                                dataword = Word.objects.filter(text=word, root=None)
+                                if dataword:
+                                    wordinstances.append(WordInstance(word=dataword.first(), video=vid, start=start, end=end))
+                                continue
+                            elif word == 'mam':
+                                dataword = Word.objects.filter(text=word, tag='fin:sg:pri:imperf')
+                                if dataword:
+                                    wordinstances.append(WordInstance(word=dataword.first(), video=vid, start=start, end=end))
+                                continue
 
+                            datawords = Word.objects.filter(text=word)
                             if datawords.count() == 1:
                                 wordinstances.append(WordInstance(word=datawords.first(), 
                                                                     video=vid, start=start, end=end))

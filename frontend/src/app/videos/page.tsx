@@ -295,7 +295,7 @@ export default function VideosPage() {
                               <LoadingSpinner size={4} color="text-black" />
                             </div>
                           ) : questions.length === 0 ? (
-                            <button onClick={handleGenerateQuestions} className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100">
+                            <button onClick={handleGenerateQuestions} className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100 cursor-pointer">
                               Generate Questions
                             </button>
                           ) : (
@@ -352,7 +352,7 @@ export default function VideosPage() {
             </div>
           )}
           {!showLeft && (
-            <button onClick={() => setShowLeft(true)} className="absolute top-2 left-4 z-20 bg-white border rounded px-2 py-1 text-sm shadow">
+            <button onClick={() => setShowLeft(true)} className="absolute top-2 left-4 z-20 bg-white border rounded px-2 py-1 text-sm shadow cursor-pointer">
               Show List
             </button>
           )}

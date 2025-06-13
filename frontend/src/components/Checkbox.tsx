@@ -1,8 +1,8 @@
 type CheckboxProps = {
-  label: string;
+  label?: string;
   checked: boolean;
-  onChange: () => void;
-  id: string;
+  onChange: (checked: boolean) => void;
+  id?: string;
 };
 
 const Checkbox = ({ label, checked, onChange, id }: CheckboxProps) => {
@@ -12,10 +12,10 @@ const Checkbox = ({ label, checked, onChange, id }: CheckboxProps) => {
         type="checkbox"
         id={id}
         checked={checked}
-        onChange={onChange}
-        className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-default"
+        onChange={(e) => onChange(e.target.checked)}
+        className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
       />
-      <span className="ml-2">{label}</span>
+      {label && <span className="ml-2">{label}</span>}
     </label>
   );
 };

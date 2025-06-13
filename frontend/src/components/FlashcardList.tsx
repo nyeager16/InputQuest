@@ -65,14 +65,14 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
     <div className="w-64 h-full overflow-y-auto p-2 bg-gray-100">
       <div className="flex justify-between items-center mb-2 gap-2">
         <button
-          className="text-sm text-white bg-blue-500 px-3 py-1 rounded hover:bg-blue-600"
+          className="text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded hover:bg-blue- cursor-pointer"
           onClick={toggleEditMode}
         >
           {editMode ? 'Cancel' : 'Edit'}
         </button>
 
         <button
-          className="text-sm text-white bg-green-500 px-3 py-1 rounded hover:bg-green-600"
+          className="text-sm text-white bg-green-500 px-3 py-1 rounded hover:bg-green-600 cursor-pointer"
           onClick={handleToggleFilter}
         >
           {userPrefs?.vocab_filter === 0 ? 'A→Z' : 'Recent'}
@@ -81,7 +81,7 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
         <button
           className={`text-sm px-3 py-1 rounded ${
             selectedIds.size > 0
-              ? 'bg-red-500 text-white hover:bg-red-600'
+              ? 'bg-red-500 text-white hover:bg-red-600 cursor-pointer'
               : 'bg-gray-300 text-gray-600 cursor-not-allowed'
           }`}
           onClick={handleDelete}
@@ -98,8 +98,15 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
             selectedWordId === card.word.id
               ? 'bg-blue-200 font-semibold'
               : 'bg-white hover:bg-blue-100'
-          }`}
-          onClick={() => !editMode && onWordClick(card)}
+          } cursor-pointer `}
+          onClick={() => {
+            if (editMode) {
+              const alreadySelected = selectedIds.has(card.word.id);
+              handleCheckboxChange(card.word.id, !alreadySelected);
+            } else {
+              onWordClick(card);
+            }
+          }}
         >
           <span>{card.word.text}</span>
           {editMode && (

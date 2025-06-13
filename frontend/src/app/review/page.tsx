@@ -91,7 +91,7 @@ export default function ReviewPage() {
         ) : (
           <button
             onClick={() => setShowAnswer(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
           >
             Show Answer (Space)
           </button>
@@ -101,13 +101,13 @@ export default function ReviewPage() {
           <div className="flex justify-around mt-4 space-x-4">
             <button
               onClick={() => handleAnswer(false)}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer"
             >
               Incorrect (1)
             </button>
             <button
               onClick={() => handleAnswer(true)}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 cursor-pointer"
             >
               Correct (2)
             </button>

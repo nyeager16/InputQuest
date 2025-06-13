@@ -230,7 +230,7 @@ export async function submitAnswers(payload: AnswerSubmission) {
     body: JSON.stringify(payload),
   });
 
-  if (!ok) throw new Error('Failed submit answers');
+  if (!ok) throw new Error('Failed to submit answers');
   return data;
 }
 
@@ -247,5 +247,20 @@ export async function getLearnData(wordId: number) {
     method: 'GET',
   });
   if (!ok) throw new Error('Failed to get word data');
+  return data;
+}
+
+export async function updateUserWordConjugations(
+  payload: { word_id: number; needs_review: boolean }[]
+) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/userwords/conjugations/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!ok) throw new Error('Failed to update conjugation userwords');
   return data;
 }

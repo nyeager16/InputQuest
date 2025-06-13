@@ -60,7 +60,7 @@ export default function AccountPage() {
         <div>
           <button
             onClick={() => setFlashcardOpen((prev) => !prev)}
-            className="w-full text-left text-lg font-medium py-2 px-3 rounded bg-gray-100 hover:bg-gray-200 transition"
+            className="w-full text-left text-lg font-medium py-2 px-3 rounded bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
           >
             Flashcard Settings
           </button>
@@ -82,7 +82,7 @@ export default function AccountPage() {
                 />
                 <button
                   onClick={handleReset}
-                  className="text-sm px-2 py-1 border rounded bg-white hover:bg-gray-100 shadow"
+                  className="text-sm px-2 py-1 border rounded bg-white hover:bg-gray-100 shadow cursor-pointer"
                 >
                   Reset
                 </button>
@@ -91,7 +91,7 @@ export default function AccountPage() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="text-sm px-3 py-1 border rounded bg-blue-500 text-white hover:bg-blue-600 transition disabled:opacity-50"
+                  className="text-sm px-3 py-1 border rounded bg-blue-500 text-white hover:bg-blue-600 transition disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? 'Saving...' : 'Save'}
                 </button>
@@ -104,7 +104,7 @@ export default function AccountPage() {
         <div>
           <button
             onClick={() => setStatisticsOpen((prev) => !prev)}
-            className="w-full text-left text-lg font-medium py-2 px-3 rounded bg-gray-100 hover:bg-gray-200 transition"
+            className="w-full text-left text-lg font-medium py-2 px-3 rounded bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
           >
             Statistics
           </button>

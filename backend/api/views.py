@@ -86,9 +86,9 @@ def user_words(request):
     if request.method == 'GET':
         vocab_filter = int(request.query_params.get('vocab_filter'))
         if vocab_filter == 0: # Alphabetical Order
-            user_words = UserWord.objects.filter(user=request.user).order_by('word__text')
+            user_words = UserWord.objects.filter(user=request.user, word__root=None).order_by('word__text')
         else: # Recently Added
-            user_words = UserWord.objects.filter(user=request.user).order_by('-id')
+            user_words = UserWord.objects.filter(user=request.user, word__root=None).order_by('-id')
         
         serializer = UserWordSerializer(user_words, many=True)
         return Response(serializer.data)
@@ -435,3 +435,44 @@ def learn_word(request, word_id):
         "video_url": video.url,
         "instances": instances
     }, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def user_words_conjugations(request):
+    user = request.user
+    payload = request.data  # List of dicts with word_id and needs_review
+
+    word_ids = [item['word_id'] for item in payload if 'word_id' in item]
+    needs_review_map = {item['word_id']: item['needs_review'] for item in payload if 'word_id' in item}
+
+    # Get all valid Word IDs in one query
+    valid_word_ids = set(
+        Word.objects.filter(id__in=word_ids).values_list('id', flat=True)
+    )
+
+    # Get existing UserWord entries
+    existing_user_words = UserWord.objects.filter(user=user, word_id__in=valid_word_ids)
+    existing_by_word_id = {uw.word_id: uw for uw in existing_user_words}
+
+    to_update = []
+    to_create = []
+
+    for word_id in valid_word_ids:
+        needs_review = needs_review_map.get(word_id)
+        if needs_review is None:
+            continue
+
+        existing = existing_by_word_id.get(word_id)
+        if existing:
+            existing.needs_review = needs_review
+            to_update.append(existing)
+        elif needs_review:
+            to_create.append(UserWord(user=user, word_id=word_id, needs_review=True))
+
+    if to_update:
+        UserWord.objects.bulk_update(to_update, ['needs_review'])
+
+    if to_create:
+        UserWord.objects.bulk_create(to_create)
+
+    return Response({'detail': 'User words processed successfully'}, status=status.HTTP_200_OK)
