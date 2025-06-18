@@ -61,7 +61,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   const updatePref = async (updates: Partial<UserPreferences>) => {
     if (!userPrefs) return;
     try {
-      await updateUserPreferences({ data: updates });
+      await updateUserPreferences(updates);
       setUserPrefs((prev) => (prev ? { ...prev, ...updates } : prev));
     } catch (e) {
       console.error('Failed to update preferences', e);

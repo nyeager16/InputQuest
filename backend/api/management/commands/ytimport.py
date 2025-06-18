@@ -115,7 +115,6 @@ def extract_sentences(transcript_data, video, word_threshold=15):
             start=int(buffer_start),
             end=int(safe_end)
         ))
-
     return sentence_list
 
 class Command(BaseCommand):
@@ -194,6 +193,16 @@ class Command(BaseCommand):
                                 continue
                             elif word == 'mam':
                                 dataword = Word.objects.filter(text=word, tag='fin:sg:pri:imperf')
+                                if dataword:
+                                    wordinstances.append(WordInstance(word=dataword.first(), video=vid, start=start, end=end))
+                                continue
+                            elif word == 'mają':
+                                dataword = Word.objects.filter(text=word, root__text='mieć')
+                                if dataword:
+                                    wordinstances.append(WordInstance(word=dataword.first(), video=vid, start=start, end=end))
+                                continue
+                            elif word == 'mieć':
+                                dataword = Word.objects.filter(text=word, root=None)
                                 if dataword:
                                     wordinstances.append(WordInstance(word=dataword.first(), video=vid, start=start, end=end))
                                 continue

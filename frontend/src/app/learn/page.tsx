@@ -12,6 +12,7 @@ type Word = {
   id: number;
   text: string;
   tag: string;
+  ipa: string;
 };
 
 type ConjugationCache = {
@@ -254,7 +255,10 @@ export default function LearnPage() {
             const currentInstance = learnData?.instances?.[currentIndex];
 
             return (
-              <li key={word.id} className="border-t border-gray-300">
+              <li
+                key={word.id}
+                className="border-t border-gray-300"
+              >
                 <div className="flex items-center justify-between gap-3 p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleExpandWord(word.id)}>
                   <div className="flex items-center gap-2">
                     <div className={`text-xs font-semibold w-16 text-center py-1 rounded text-white ${posColor}`}>{posLabel}</div>
@@ -277,10 +281,9 @@ export default function LearnPage() {
                       <p className="text-xl font-bold">{word.text}</p>
                       <p className="text-lg">{learnData?.definition || '...'}</p>
                       <div className="flex justify-center">
-                        <PronunciationGuide language="pl" word={word.text} />
+                        <PronunciationGuide language="pl" word={word.ipa} />
                       </div>
                     </div>
-
                     <div className="flex flex-row gap-6">
                       {/* Left side: video and controls */}
                       <div className="w-1/2 text-sm text-gray-700 space-y-3 flex flex-col">
@@ -323,7 +326,7 @@ export default function LearnPage() {
                                     playerRefs.current[word.id]?.seekTo(currentInstance.start, true);
                                   }}
                                 >
-                                  Skip to "{currentInstance.word__text}"
+                                  Skip to {currentInstance.word__text}
                                 </button>
                                 <button
                                   className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded cursor-pointer"

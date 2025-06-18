@@ -19,9 +19,9 @@ export async function getUserPreferences() {
   return data;
 }
 
-export async function updateUserPreferences(updates: {
-  data: Partial<UserPreferences>
-}) {
+export async function updateUserPreferences(
+  updates: Partial<UserPreferences>
+) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'PATCH',
     body: JSON.stringify(updates),

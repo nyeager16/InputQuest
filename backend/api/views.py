@@ -70,7 +70,12 @@ def user_login(request):
 def user_signup(request):
     serializer = UserSignupSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        user = serializer.save()
+        language = Language.objects.filter(abb='pl').first()
+        UserPreferences.objects.get_or_create(
+            user=user,
+            defaults={'language': language}
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -381,8 +386,11 @@ def submit_answers(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def conjugations(request, word_id):
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
     word = Word.objects.get(id=word_id)
-    result = get_conjugation_table(word, None)
+    result = get_conjugation_table(word, user)
     return Response(result)
 
 @api_view(['GET'])

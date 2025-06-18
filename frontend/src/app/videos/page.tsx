@@ -243,7 +243,6 @@ export default function VideosPage() {
                           {genre}
                         </div>
                       ))}
-
                     </div>
                   </div>
                 </div>
@@ -273,7 +272,13 @@ export default function VideosPage() {
           )}
           {showLeft && showRight && <div onMouseDown={startResizing} className="w-1 cursor-col-resize bg-gray-300 hover:bg-gray-400 transition" />}
           {showRight && (
-            <div className="relative overflow-y-auto flex flex-col px-4 py-2" style={{ width: showLeft ? `${100 - leftWidthPercent}%` : '100%', maxWidth: '900px', marginLeft: 'auto' }}>
+            <div
+              className="relative overflow-y-auto flex flex-col px-4 py-2 mx-auto"
+              style={{
+                width: showLeft ? `${100 - leftWidthPercent}%` : '100%',
+                maxWidth: '900px',
+              }}
+            >
               <div className="h-10" />
               <div className="flex-1 overflow-y-auto">
                 {selected ? (
