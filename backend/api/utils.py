@@ -7,8 +7,16 @@ from django.conf import settings
 from openai import OpenAI
 import hashlib
 
-def get_common_words(language):
-    words = Word.objects.filter(language=language, root=None).order_by('-instance_count')
+def get_common_words(language, exclude_ids=None, count=1000):
+    if exclude_ids is None:
+        exclude_ids = []
+
+    words = (
+        Word.objects
+        .filter(language=language, root=None, instance_count__gt=0)
+        .exclude(id__in=exclude_ids)
+        .order_by('-instance_count')[:count]
+    )
     return words
 
 def get_video_scores_for_wordset(word_ids: set) -> list[tuple[int, int]]:

@@ -17,6 +17,7 @@ export type UserPreferences = {
   grid_view: boolean;
   user: number;
   word_set: number;
+  setup_complete: boolean;
 };
 
 type ContextType = {
@@ -24,7 +25,12 @@ type ContextType = {
   loading: boolean;
   refresh: () => void;
   setPrefs: React.Dispatch<React.SetStateAction<UserPreferences | null>>;
-  updatePref: (updates: Partial<UserPreferences>) => Promise<void>;
+  updatePref: (
+    updates: Partial<UserPreferences> & {
+      language_id?: number;
+      word_set_id?: number;
+    }
+  ) => Promise<void>;
   clearPrefs: () => void;
 };
 
@@ -42,7 +48,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const data = await getUserPreferences();
       setUserPrefs(data);
@@ -58,11 +64,21 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     refresh();
   }, [refresh]);
 
-  const updatePref = async (updates: Partial<UserPreferences>) => {
+  const updatePref = async (
+    updates: Partial<UserPreferences> & {
+      language_id?: number;
+      word_set_id?: number;
+    }
+  ) => {
     if (!userPrefs) return;
     try {
       await updateUserPreferences(updates);
-      setUserPrefs((prev) => (prev ? { ...prev, ...updates } : prev));
+      const hasForeignKey = 'language_id' in updates || 'word_set_id' in updates;
+      if (hasForeignKey) {
+        await refresh(); // fetch fresh data with nested fields updated
+      } else {
+        setUserPrefs((prev) => (prev ? { ...prev, ...updates } : prev));
+      }
     } catch (e) {
       console.error('Failed to update preferences', e);
     }

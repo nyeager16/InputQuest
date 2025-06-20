@@ -1,31 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { updateUserWordConjugations } from '@/lib/api';
-
-
-interface FormEntry {
-  id: number;
-  text: string;
-  needs_review: boolean;
-}
-
-type VerbTable = {
-  present: Record<string, Record<string, FormEntry>>;
-  past: Record<string, Record<string, FormEntry>>;
-};
-
-type NounTable = Record<string, Record<'sg' | 'pl', FormEntry>>;
-
-type AdjTable = Record<string, Record<string, FormEntry>>;
-
-type TableData = {
-  table_type: number;
-  conjugation_table: {
-    verb?: VerbTable;
-    noun?: NounTable;
-    adjective?: AdjTable;
-  };
-};
+import type { TableData, FormEntry, VerbTable, NounTable, AdjTable } from '@/types/types';
 
 const FlashcardConjugations: React.FC<{ data: TableData }> = ({ data }) => {
   const { table_type, conjugation_table } = data;

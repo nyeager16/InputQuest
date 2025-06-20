@@ -7,22 +7,16 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import FlashcardConjugations from '@/components/FlashcardConjugations';
 import { getUserWords, getDefinition, saveDefinition, deleteUserWords, getConjugations } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
+import type { WordCard, TableData } from '@/types/types';
 
 export default function MyVocabPage() {
   const router = useRouter();
   const { data: userPrefs, loading: authLoading } = useUserPreferences();
 
-  const [cards, setCards] = useState<any[]>([]);
-  const [selectedCard, setSelectedCard] = useState<any | null>(null);
+  const [cards, setCards] = useState<WordCard[]>([]);
+  const [selectedCard, setSelectedCard] = useState<WordCard | null>(null);
   const [definition, setDefinition] = useState<string>('');
-  const [conjugationData, setConjugationData] = useState<{
-    table_type: number;
-    conjugation_table: {
-      verb?: VerbTable;
-      noun?: NounTable;
-      adjective?: AdjTable;
-    };
-  } | null>(null);
+  const [conjugationData, setConjugationData] = useState<TableData | null>(null);
   const [loadingDef, setLoadingDef] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +40,7 @@ export default function MyVocabPage() {
     }
   };
 
-  const handleWordClick = async (card: any) => {
+  const handleWordClick = async (card: WordCard) => {
     setSelectedCard(card);
     setLoadingDef(true);
     setError(null);
@@ -59,6 +53,7 @@ export default function MyVocabPage() {
       setConjugationData(conj);
     } catch (err) {
       setError('Failed to load definition or conjugation.');
+      console.log(err);
     } finally {
       setLoadingDef(false);
     }

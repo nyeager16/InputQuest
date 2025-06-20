@@ -2,22 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import { getCommonWords, addUserWord, getConjugations, getLearnData } from '@/lib/api';
+import { getWordsLearn, addUserWord, getConjugations, getLearnData } from '@/lib/api';
 import YouTube from 'react-youtube';
+import type { YouTubePlayer } from 'react-youtube';
 import ConjugationTable from '@/components/ConjugationTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PronunciationGuide from '@/components/PronunciationGuide';
-
-type Word = {
-  id: number;
-  text: string;
-  tag: string;
-  ipa: string;
-};
-
-type ConjugationCache = {
-  [wordId: number]: any;
-};
+import type { Word, ConjugationCache, LearnData } from '@/types/types';
 
 const POS_CATEGORIES: { [label: string]: string[] } = {
   noun: ['subst'],
@@ -56,13 +47,13 @@ export default function LearnPage() {
   const [conjugationCache, setConjugationCache] = useState<ConjugationCache>({});
   const [conjugationLoadingId, setConjugationLoadingId] = useState<number | null>(null);
 
-  const [learnDataCache, setLearnDataCache] = useState<{ [wordId: number]: any }>({});
+  const [learnDataCache, setLearnDataCache] = useState<{ [wordId: number]: LearnData }>({});
   const [learnDataLoadingId, setLearnDataLoadingId] = useState<number | null>(null);
   const [videoTimestamps, setVideoTimestamps] = useState<{ [wordId: number]: number }>({});
   const [playerReady, setPlayerReady] = useState<{ [wordId: number]: boolean }>({});
 
   const observerRef = useRef<HTMLDivElement | null>(null);
-  const playerRefs = useRef<{ [wordId: number]: any }>({});
+  const playerRefs = useRef<{ [wordId: number]: YouTubePlayer }>({});
 
   const handleExpandWord = async (wordId: number) => {
     const newId = expandedWordId === wordId ? null : wordId;
@@ -98,7 +89,7 @@ export default function LearnPage() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const data = await getCommonWords();
+        const data = await getWordsLearn();
         const uniqueWords = data.results.filter((word: Word) => !words.some((w) => w.id === word.id));
         const combined = [...words, ...uniqueWords];
         setWords(combined);
@@ -133,7 +124,7 @@ export default function LearnPage() {
         if (entry.isIntersecting && nextPageUrl && !stopPagination) {
           try {
             const pageNum = parseInt(new URL(nextPageUrl, window.location.href).searchParams.get('page') || '1');
-            const data = await getCommonWords(pageNum);
+            const data = await getWordsLearn(pageNum);
             const uniqueWords = data.results.filter((word: Word) => !words.some((w) => w.id === word.id));
             const combined = [...words, ...uniqueWords];
             setWords(combined);

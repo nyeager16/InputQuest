@@ -20,6 +20,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserPreferencesSerializer(serializers.ModelSerializer):
     language = LanguageSerializer(read_only=True)
+    language_id = serializers.PrimaryKeyRelatedField(
+        source='language',
+        queryset=Language.objects.all(),
+        write_only=True,
+        required=False
+    )
 
     class Meta:
         model = UserPreferences

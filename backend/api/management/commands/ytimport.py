@@ -149,14 +149,15 @@ class Command(BaseCommand):
             try:
                 tr = YouTubeTranscriptApi.get_transcript(videoID, 
                                                          languages=[language])
+            # except RequestBlocked:
+            #     break
             except:
                 continue
-
             auto = True
-            transcript_list = YouTubeTranscriptApi.list_transcripts(videoID)
-            transcript = transcript_list.find_transcript([language])
-            is_generated = transcript.is_generated
-            if not is_generated: auto = False
+            # transcript_list = YouTubeTranscriptApi.list_transcripts(videoID)
+            # transcript = transcript_list.find_transcript([language])
+            # is_generated = transcript.is_generated
+            # if not is_generated: auto = False
             vid = Video(url=videoID, title=title, channel=channel, 
                                 language=language_object, auto_generated=auto)
             videos.append(vid)

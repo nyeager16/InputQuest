@@ -3,21 +3,7 @@
 import React, { useState } from 'react';
 import Checkbox from '@/components/Checkbox';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-
-type WordCard = {
-  word: {
-    id: number;
-    text: string;
-  };
-  data: Record<string, any>;
-};
-
-type FlashcardListProps = {
-  cards?: WordCard[];
-  onWordClick: (card: WordCard) => void;
-  selectedWordId?: number;
-  onDeleteWords?: (ids: number[]) => void;
-};
+import type { FlashcardListProps } from '@/types/types';
 
 const FlashcardList: React.FC<FlashcardListProps> = ({
   cards = [],

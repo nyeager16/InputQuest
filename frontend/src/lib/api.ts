@@ -38,10 +38,10 @@ export async function getUserWords(vocab_filter: number) {
   return data;
 }
 
-export async function getCommonWords(pageOrUrl: number | string = 1) {
+export async function getWordsLearn(pageOrUrl: number | string = 1) {
   const url = typeof pageOrUrl === 'string'
     ? pageOrUrl
-    : `${API_URL}/words/common/?page=${pageOrUrl}`;
+    : `${API_URL}/words/learn/?page=${pageOrUrl}`;
 
   const { data, ok } = await fetchWithAuth(url, { method: 'GET' });
   if (!ok) throw new Error('Failed to fetch common words');
@@ -264,3 +264,25 @@ export async function updateUserWordConjugations(
   if (!ok) throw new Error('Failed to update conjugation userwords');
   return data;
 }
+
+export async function getLanguages() {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/languages/`, {
+    method: 'GET',
+  });
+  if (!ok) throw new Error('Failed to get languages');
+  return data;
+}
+
+export async function getCommonWords(language: number, count: number, exclude: number[] = []) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/words/common/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ language, count, exclude }),
+  });
+
+  if (!ok) throw new Error('Failed to get common words');
+  return data;
+}
+

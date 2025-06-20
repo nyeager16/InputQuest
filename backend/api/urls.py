@@ -1,9 +1,9 @@
 from django.urls import path
 from .views import (
     current_user, user_preferences, user_login, user_signup, learn_word,
-    common_words, user_words, get_user_reviews, submit_review, conjugations,
+    words_learn, user_words, get_user_reviews, submit_review, conjugations,
     definitions, user_words_del, get_videos, video_words, get_questions, 
-    submit_answers, user_words_conjugations
+    submit_answers, user_words_conjugations, languages, common_words
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -17,6 +17,7 @@ urlpatterns = [
     path('users/me/userwords/', user_words, name='user-words'),
     path('users/me/reviews/', get_user_reviews, name='get-user-reviews'),
 
+    path('words/learn/', words_learn, name='words-learn'),
     path('words/common/', common_words, name='common-words'),
     path('words/video/<int:video_id>/', video_words, name='video-words'),
     path('words/<int:word_id>/conjugations/', conjugations, name='conjugations'),
@@ -34,6 +35,8 @@ urlpatterns = [
     path('questions/video/<int:video_id>/', get_questions, name='questions'),
 
     path('answers/', submit_answers, name='feedback'),
+
+    path('languages/', languages, name='languages'),
 
     path('login/', user_login, name='login'),
     path('signup/', user_signup, name='signup'),

@@ -16,7 +16,7 @@ from .serializers import (
     UserSerializer, UserPreferencesSerializer, UserLoginSerializer, 
     UserSignupSerializer, UserWordSerializer, WordSerializer, 
     DefinitionSerializer, VideoSerializer, UserVideoSerializer,
-    QuestionSerializer
+    QuestionSerializer, LanguageSerializer
 )
 from .utils import (
     get_common_words, create_questions, generate_feedback, get_conjugation_table
@@ -127,17 +127,24 @@ class CommonWordsPagination(PageNumberPagination):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def common_words(request):
-    language = Language.objects.get(abb='pl')
-    words = get_common_words(language)
-
-    # Filter out known words only if user is authenticated
+def words_learn(request):
+    count = 1000
     if request.user.is_authenticated:
-        user_word_ids = UserWord.objects.filter(user=request.user).values_list('word__id', flat=True)
-        words = words.exclude(id__in=user_word_ids)
+        exclude_ids = list(
+            UserWord.objects
+            .filter(user=request.user)
+            .values_list('word__id', flat=True)
+        )
+        user_prefs = request.user.userpreferences
+        language = user_prefs.language
+    else:
+        language = Language.objects.get(abb='pl')
+        exclude_ids = []
+    words = get_common_words(language, exclude_ids, count)    
 
     paginator = CommonWordsPagination()
     result_page = paginator.paginate_queryset(words, request)
+
     word_ids = [word.id for word in result_page]
     add_definitions(word_ids, language.abb)
     serializer = WordSerializer(result_page, many=True)
@@ -484,3 +491,27 @@ def user_words_conjugations(request):
         UserWord.objects.bulk_create(to_create)
 
     return Response({'detail': 'User words processed successfully'}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def languages(request):
+    all_languages = Language.objects.all()
+    serializer = LanguageSerializer(all_languages, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def common_words(request):
+    count = int(request.data.get('count', 10))
+    exclude_ids = request.data.get('exclude', [])
+    language_id = request.data.get('language', 1)
+    try:
+        language = Language.objects.get(id=language_id)
+    except:
+        return Response({"error": "Language not found"}, status=404)
+    if count > 5000: count = 10
+
+    words = get_common_words(language, exclude_ids, count)
+    serializer = WordSerializer(words, many=True)
+
+    return Response(serializer.data)
