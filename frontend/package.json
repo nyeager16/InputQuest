@@ -17,6 +17,7 @@
     "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-virtualized-auto-sizer": "^1.0.26",
     "react-window": "^1.8.11",
     "react-youtube": "^10.1.0",
     "tailwindcss": "^4.1.4"

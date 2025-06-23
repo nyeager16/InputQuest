@@ -62,7 +62,7 @@ export default function SetupPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-white relative">
       {/* Language at top, clickable to reselect */}
       {selectedLang && (
-        <div className="absolute top-8 z-10">
+        <div className="mt-8 mb-12">
           <div
             onClick={resetLanguageSelection}
             className="cursor-pointer w-36 h-32 border rounded-lg p-4 flex flex-col items-center justify-center bg-white shadow-sm hover:shadow-md"
@@ -106,7 +106,7 @@ export default function SetupPage() {
 
       {/* Experience level selection */}
       {selectedLang && (
-        <div className="flex flex-col items-center justify-center mt-32">
+        <div className="flex flex-col items-center justify-center pt-16 pb-20">
           <h2 className="text-2xl font-semibold text-center">Choose Your Experience Level</h2>
           <p className="text-sm text-gray-600 text-center mt-2 mb-8 max-w-md">
             Word count represents the amount of common words in your chosen language that will be added to your account.

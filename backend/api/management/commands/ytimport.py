@@ -141,7 +141,7 @@ class Command(BaseCommand):
             url=channel_url,
             name=channel_name
         )
-        for video in channel_videos:
+        for j, video in enumerate(channel_videos):
             videoID = video['videoId']
             if Video.objects.filter(url=videoID).exists():
                 continue
@@ -228,6 +228,13 @@ class Command(BaseCommand):
                 elif language == 'de':
 
                     return
+            if j % 10 == 0 and j > 0:
+                Video.objects.bulk_create(videos)
+                Sentence.objects.bulk_create(sentences)
+                WordInstance.objects.bulk_create(wordinstances)
+                videos = []
+                sentences = []
+                wordinstances = []
         Video.objects.bulk_create(videos)
         Sentence.objects.bulk_create(sentences)
         WordInstance.objects.bulk_create(wordinstances)
