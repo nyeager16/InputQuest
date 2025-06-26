@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import { getWordsLearn, addUserWord, getConjugations, getLearnData } from '@/lib/api';
+import { getWordsLearn, addUserWords, getConjugations, getLearnData } from '@/lib/api';
 import YouTube from 'react-youtube';
 import type { YouTubePlayer } from 'react-youtube';
 import ConjugationTable from '@/components/ConjugationTable';
@@ -175,7 +175,7 @@ export default function LearnPage() {
       return;
     }
     try {
-      await addUserWord(wordId);
+      await addUserWords([wordId]);
       setWords((prevWords) => prevWords.filter((word) => word.id !== wordId));
     } catch {
       alert('Failed to add word');

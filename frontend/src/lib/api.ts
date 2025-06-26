@@ -66,12 +66,12 @@ export async function submitReview(userWordId: number, rating: 0 | 1): Promise<v
   if (!ok) throw new Error('Failed to submit review');
 }
 
-export async function addUserWord(wordId: number) {
+export async function addUserWords(wordIds: number[]) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/`, {
     method: 'POST',
-    body: JSON.stringify({ word_id: wordId }),
+    body: JSON.stringify({ word_ids: wordIds }),
   });
-  if (!ok) throw new Error('Failed to add word');
+  if (!ok) throw new Error('Failed to add words');
   return data;
 }
 

@@ -79,11 +79,19 @@ def user_signup(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def add_word(user, word):
-    user_word = UserWord(user=user, word=word)
-    user_word.save()
-    calculate_user_video_scores(user.id, word.language.id)
-    add_definitions([word.id], 'pl')
+def add_words(user, words):
+    existing_word_ids = set(
+        UserWord.objects.filter(user=user, word_id__in=[word.id for word in words])
+        .values_list('word_id', flat=True)
+    )
+    new_words = [word for word in words if word.id not in existing_word_ids]
+    new_userwords = [UserWord(user=user, word=word) for word in new_words]
+    UserWord.objects.bulk_create(new_userwords)
+
+    if new_words:
+        calculate_user_video_scores(user.id, words[0].language.id)
+        word_ids = [word.id for word in new_words]
+        add_definitions(word_ids, words[0].language.abb)
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -99,12 +107,12 @@ def user_words(request):
         return Response(serializer.data)
 
     if request.method == 'POST':
-        word_id = request.data.get('word_id')
-        try:
-            word = Word.objects.get(id=word_id)
-        except Word.DoesNotExist:
-            return Response({"error": "Word not found"}, status=404)
-        add_word(request.user, word)
+        word_ids = request.data.get('word_ids')
+        if not isinstance(word_ids, list):
+            return Response({"error": "word_ids must be a list"}, status=400)
+        words = Word.objects.filter(id__in=word_ids)
+
+        add_words(request.user, words)
         return Response({"message": "ok"}, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
@@ -510,8 +518,11 @@ def common_words(request):
     except:
         return Response({"error": "Language not found"}, status=404)
     if count > 5000: count = 10
-
-    words = get_common_words(language, exclude_ids, count)
+    existing_word_ids = list(
+        UserWord.objects.filter(user=request.user)
+        .values_list('word_id', flat=True)
+    )
+    words = get_common_words(language, exclude_ids+existing_word_ids, count)
     serializer = WordSerializer(words, many=True)
 
     return Response(serializer.data)
