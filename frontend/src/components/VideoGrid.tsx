@@ -28,6 +28,7 @@ export default function VideoGrid({ videos, loading, selectedVideoId, onSelect, 
                 src={`https://img.youtube.com/vi/${item.video.url}/hqdefault.jpg`}
                 alt={item.video.title}
                 fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 className="object-cover"
               />
             </div>

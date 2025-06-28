@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { getLanguages } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import type { Language } from '@/components/LanguageSelection';
+import type { Language } from '@/types/types';
 
 const EXPERIENCE_LEVELS = [
   { label: 'Beginner', words: 0 },
@@ -23,23 +23,33 @@ export default function SetupPage() {
   const [selectedLang, setSelectedLang] = useState<Language | null>(null);
   const [selectedWords, setSelectedWords] = useState<number | null | undefined>(undefined);
   const [customWords, setCustomWords] = useState<string>('');
-  const { updatePref } = useUserPreferences();
+  const { data: userPrefs, updatePref } = useUserPreferences();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    if (!userPrefs || !userPrefs.language) return;
+
     const fetchLanguages = async () => {
       try {
         const data = await getLanguages();
         setLanguages(data);
+
+        if (userPrefs.setup_complete) {
+          const matchedLang = data.find((lang: Language) => lang.id === userPrefs.language.id);
+          if (matchedLang) {
+            setSelectedLang(matchedLang);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch languages:', error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchLanguages();
-  }, []);
+  }, [userPrefs]);
 
   const handleLanguageSelect = async (language: Language) => {
     await updatePref({ language_id: language.id });

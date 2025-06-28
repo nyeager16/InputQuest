@@ -1,7 +1,9 @@
 from .models import (
     Language, Word, WordInstance, UserWord, UserVideo, Video, 
-    Question, Sentence, Feedback, WordSet, WordSetVideoScore
+    Question, Sentence, Feedback, WordSet, WordSetVideoScore, Unaccent
 )
+from django.db.models import Q
+from django.db.models.functions import Lower
 from django.db import transaction
 from django.conf import settings
 from openai import OpenAI
@@ -18,6 +20,34 @@ def get_common_words(language, exclude_ids=None, count=1000):
         .order_by('-instance_count')[:count]
     )
     return words
+
+def get_search_words(language, exclude_ids=None, term=''):
+    if exclude_ids is None:
+        exclude_ids = []
+
+    # Normalize search term: lowercase and unaccented
+    normalized_term = term.lower()
+
+    qs = Word.objects.annotate(
+        normalized_text=Unaccent(Lower('text'))
+    ).filter(
+        language=language,
+        normalized_text__icontains=normalized_term
+    ).exclude(
+        Q(id__in=exclude_ids) | Q(root_id__in=exclude_ids)
+    ).order_by('-instance_count')[:50]
+
+    results = []
+    seen_ids = set(exclude_ids)
+
+    for word in qs:
+        base_word = word.root if word.root else word
+        if base_word.id in seen_ids:
+            continue
+        results.append(base_word)
+        seen_ids.add(base_word.id)
+
+    return results[:15]
 
 def get_video_scores_for_wordset(word_ids: set) -> list[tuple[int, int]]:
     if not word_ids:

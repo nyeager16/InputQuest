@@ -286,3 +286,15 @@ export async function getCommonWords(language: number, count: number, exclude: n
   return data;
 }
 
+export async function getSearchWords(language: number, exclude: number[] = [], term: string) {
+  const { data, ok } = await fetchWithAuth(`${API_URL}/words/search/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ language, exclude, term }),
+  });
+
+  if (!ok) throw new Error('Failed to get search words');
+  return data;
+}

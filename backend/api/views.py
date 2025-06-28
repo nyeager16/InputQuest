@@ -19,7 +19,7 @@ from .serializers import (
     QuestionSerializer, LanguageSerializer
 )
 from .utils import (
-    get_common_words, create_questions, generate_feedback, get_conjugation_table
+    get_common_words, create_questions, generate_feedback, get_conjugation_table, get_search_words
 )
 from .tasks import (
     add_definitions, calculate_user_video_scores
@@ -118,13 +118,17 @@ def user_words(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def user_words_del(request):
+    user = request.user
+    user_prefs = UserPreferences.objects.get(user=user)
+    language_id = user_prefs.language.id
     word_ids = request.data.get('ids', [])
 
     if not isinstance(word_ids, list):
         return Response({'error': 'Invalid data format: ids must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Delete UserWord entries for current user and matching word IDs
-    deleted, _ = UserWord.objects.filter(user=request.user, word_id__in=word_ids).delete()
+    deleted, _ = UserWord.objects.filter(user=user, word_id__in=word_ids).delete()
+    calculate_user_video_scores(user.id, language_id)
 
     return Response({'deleted': deleted}, status=status.HTTP_200_OK)
 
@@ -523,6 +527,25 @@ def common_words(request):
         .values_list('word_id', flat=True)
     )
     words = get_common_words(language, exclude_ids+existing_word_ids, count)
+    serializer = WordSerializer(words, many=True)
+
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def search_words(request):
+    term = request.data.get('term', 10)
+    exclude_ids = request.data.get('exclude', [])
+    language_id = request.data.get('language', 1)
+    try:
+        language = Language.objects.get(id=language_id)
+    except:
+        return Response({"error": "Language not found"}, status=404)
+    existing_word_ids = list(
+        UserWord.objects.filter(user=request.user)
+        .values_list('word_id', flat=True)
+    )
+    words = get_search_words(language, exclude_ids+existing_word_ids, term)
     serializer = WordSerializer(words, many=True)
 
     return Response(serializer.data)

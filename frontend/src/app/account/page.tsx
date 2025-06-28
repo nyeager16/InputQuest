@@ -115,6 +115,16 @@ export default function AccountPage() {
             </div>
           )}
         </div>
+
+        {/* Language and Vocab Setup */}
+        <div className="pt-6 border-t">
+          <button
+            onClick={() => router.push('/account/setup')}
+            className="w-full text-center text-sm px-3 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 transition cursor-pointer"
+          >
+            Language and Vocab Setup
+          </button>
+        </div>
       </div>
     </div>
   );

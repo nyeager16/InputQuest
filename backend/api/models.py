@@ -1,7 +1,12 @@
 from django.db import models
+from django.db.models import Func
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 from fsrs import Card
+
+class Unaccent(Func):
+    function = 'unaccent'
+    arity = 1
 
 class Language(models.Model):
     name = models.CharField(max_length=100)

@@ -3,7 +3,7 @@ from .views import (
     current_user, user_preferences, user_login, user_signup, learn_word,
     words_learn, user_words, get_user_reviews, submit_review, conjugations,
     definitions, user_words_del, get_videos, video_words, get_questions, 
-    submit_answers, user_words_conjugations, languages, common_words
+    submit_answers, user_words_conjugations, languages, common_words, search_words
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -19,6 +19,7 @@ urlpatterns = [
 
     path('words/learn/', words_learn, name='words-learn'),
     path('words/common/', common_words, name='common-words'),
+    path('words/search/', search_words, name='search-words'),
     path('words/video/<int:video_id>/', video_words, name='video-words'),
     path('words/<int:word_id>/conjugations/', conjugations, name='conjugations'),
 

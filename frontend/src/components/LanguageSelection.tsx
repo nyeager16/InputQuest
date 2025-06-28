@@ -2,12 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-
-export type Language = {
-  id: number;
-  name: string;
-  abb: string;
-};
+import type { Language } from '@/types/types';
 
 type Props = {
   availableLanguages: Language[];

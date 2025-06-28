@@ -118,7 +118,7 @@ function tokenizeIPA(ipa: string): string[] {
 
 const PronunciationGuide: FC<PronunciationGuideProps> = ({ language, word }) => {
   const [isOpen, setIsOpen] = useState(false);
-
+  return
   if (!word) {
     return;
   }

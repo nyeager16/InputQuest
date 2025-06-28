@@ -4,25 +4,12 @@ import { useEffect, useState, memo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { getCommonWords, addUserWords } from '@/lib/api';
+import { getCommonWords, addUserWords, getSearchWords } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import type { Word } from '@/types/types';
+import type { Word, WordGroup, FlattenedItem } from '@/types/types';
 import { getPOSLabel, POS_COLORS } from '@/lib/utils';
 import Checkbox from '@/components/Checkbox';
-
-type WordGroup = {
-  label: string;
-  words: Word[];
-};
-
-type FlattenedItem =
-  | { type: 'header'; label: string; groupIndex: number }
-  | {
-      type: 'word';
-      word: Word;
-      groupIndex: number;
-      wordIndex: number;
-    };
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const POS_ORDER = ['verb', 'noun', 'adj', 'adv', 'pron', 'prep', 'part', 'int', 'other'];
 
@@ -35,6 +22,12 @@ export default function VocabPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [customWords, setCustomWords] = useState('100');
   const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAddingWords, setIsAddingWords] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<Word[]>([]);
 
   const flattenWords: FlattenedItem[] = wordGroups.flatMap((group, groupIndex) => {
     const header = [{ type: 'header', label: group.label, groupIndex }] as const;
@@ -87,12 +80,53 @@ export default function VocabPage() {
     fetchWords();
   }, [searchParams, userPrefs]);
 
+  const handleSearch = async () => {
+    if (!userPrefs?.language?.id || !searchTerm.trim()) return;
+
+    setSearchResults([]);
+    setIsSearching(true);
+    try {
+      const existingIds = wordGroups.flatMap((group) =>
+        group.words.map((word) => word.id)
+      );
+
+      const results = await getSearchWords(userPrefs.language.id, existingIds, searchTerm.trim());
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddSearchedWord = (word: Word) => {
+    const label = `Search for "${searchTerm}"`;
+
+    setWordGroups((prev) => {
+      const updated = [...prev];
+      const existing = updated.find((g) => g.label === label);
+
+      if (existing) {
+        if (!existing.words.some((w) => w.id === word.id)) {
+          existing.words.unshift(word);
+        }
+      } else {
+        updated.unshift({ label, words: [word] });
+      }
+
+      return updated;
+    });
+    setSearchResults((prev) => prev.filter((w) => w.id !== word.id));
+  };
+
   const handleAddWords = async () => {
     const count = Number(customWords);
     if (!userPrefs?.language?.id || isNaN(count) || count <= 0) return;
+    
+    setIsAddingWords(true);
     try {
       const existingIds = wordGroups.flatMap((group) => group.words.map((w) => w.id));
-      console.log(existingIds);
       const data = await getCommonWords(userPrefs.language.id, count, existingIds);
       setWordGroups((prev) => [
         { label: `Added Batch: ${data.length} words`, words: data },
@@ -100,6 +134,8 @@ export default function VocabPage() {
       ]);
     } catch (error) {
       console.error('Failed to fetch additional words:', error);
+    } finally {
+      setIsAddingWords(false);
     }
   };
 
@@ -109,18 +145,23 @@ export default function VocabPage() {
         ...group,
         words: group.words.filter((word) => !selectedIds.has(word.id)),
       }))
+      .filter((group) => group.words.length > 0)
     );
     setSelectedIds(new Set());
   };
 
   const handleDone = async () => {
     const allWordIds = wordGroups.flatMap((group) => group.words.map((word) => word.id));
+
+    setIsFinishing(true);
     try {
       await addUserWords(allWordIds);
       await updatePref({ setup_complete: true });
       router.push('/videos');
     } catch (error) {
       console.error('Failed to complete import:', error);
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -239,53 +280,115 @@ export default function VocabPage() {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Actions */}
-      <div className="flex-1 flex items-center px-6">
-        <div className="flex flex-col gap-6">
-          {/* Placeholder Search Bar */}
-          <input
-            type="text"
-            placeholder="Search (coming soon)"
-            className="border rounded px-4 py-2 w-64 text-sm"
-            disabled
-          />
+      {/* RIGHT PANEL: Search and Actions */}
+      <div className="flex-1 px-6 py-6 flex items-start">
+        <div className="w-full max-w-sm flex flex-col gap-6">
+          {/* Search Box */}
+          <div className="border rounded p-4 bg-white shadow w-full h-[300px] flex flex-col">
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search words"
+                className="border rounded px-4 py-2 w-full text-sm"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={isSearching}
+                className={`px-4 py-2 rounded text-sm text-white ${
+                  isSearching ? 'bg-green-600' : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                }`}
+              >
+                Go
+              </button>
+            </div>
 
-          {/* Add More Words */}
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={customWords}
-              onChange={(e) => setCustomWords(e.target.value)}
-              onBlur={(e) => {
-                const value = Number(e.target.value);
-                const min = 0;
-                const max = 9999;
-                if (value < min) {
-                  setCustomWords(min.toString());
-                } else if (value > max) {
-                  setCustomWords(max.toString());
-                }
-              }}
-              placeholder="Enter word count"
-              className="border rounded px-3 py-2 w-48 text-sm"
-              min={0}
-              max={9999}
-            />
-            <button
-              onClick={handleAddWords}
-              className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition cursor-pointer"
-            >
-              Add
-            </button>
+            <div className="flex-1 overflow-auto text-sm text-gray-700">
+              {isSearching ? (
+                <div className="flex justify-center items-center h-full text-gray-400">
+                  <LoadingSpinner size={5} />
+                </div>
+              ) : searchResults.length === 0 ? (
+                <p className="text-gray-400 italic">Search results will appear here...</p>
+              ) : (
+                <div className="divide-y border rounded bg-white">
+                  {searchResults.map((word) => {
+                    const posLabel = getPOSLabel(word.tag);
+                    const posColor = POS_COLORS[posLabel] || 'bg-gray-500';
+                    return (
+                      <div key={word.id} className="px-4 py-2 flex items-center gap-3 text-sm">
+                        <span className={`text-xs font-semibold w-16 text-center py-1 rounded text-white ${posColor}`}>
+                          {posLabel}
+                        </span>
+                        <span className="text-sm font-medium">{word.text}</span>
+                        <div className="ml-auto">
+                          <button
+                            onClick={() => handleAddSearchedWord(word)}
+                            className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition cursor-pointer"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Add Common Words */}
+          <div className="border-t pt-6">
+            <div className="w-full text-center mb-2">
+              <p className="text-sm font-medium">Add Common Words</p>
+            </div>
+            <div className="flex justify-center">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={customWords}
+                  onChange={(e) => setCustomWords(e.target.value)}
+                  onBlur={(e) => {
+                    const value = Number(e.target.value);
+                    const min = 0;
+                    const max = 9999;
+                    if (value < min) {
+                      setCustomWords(min.toString());
+                    } else if (value > max) {
+                      setCustomWords(max.toString());
+                    }
+                  }}
+                  placeholder="Enter word count"
+                  className="border rounded px-3 py-2 w-48 text-sm"
+                  min={0}
+                  max={9999}
+                />
+                <button
+                  onClick={handleAddWords}
+                  disabled={isAddingWords}
+                  className={`px-4 py-2 rounded text-sm text-white ${
+                    isAddingWords ? 'bg-green-600' : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                  }`}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Done Button */}
-          <button
-            onClick={handleDone}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition cursor-pointer"
-          >
-            Done
-          </button>
+          <div className="border-t pt-6 flex justify-center">
+            <button
+              onClick={handleDone}
+              disabled={isFinishing}
+              className={`px-6 py-3 rounded-lg text-lg font-semibold text-white ${
+                isFinishing ? 'bg-blue-600' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+              }`}
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -76,3 +76,23 @@ export type LearnData = {
   video_url: string;
   instances: LearnInstance[];
 };
+
+export type Language = {
+  id: number;
+  name: string;
+  abb: string;
+};
+
+export type WordGroup = {
+  label: string;
+  words: Word[];
+};
+
+export type FlattenedItem =
+  | { type: 'header'; label: string; groupIndex: number }
+  | {
+      type: 'word';
+      word: Word;
+      groupIndex: number;
+      wordIndex: number;
+    };
