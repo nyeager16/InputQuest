@@ -21,7 +21,7 @@ export default function VideosPage() {
   const [comprehensionRange, setComprehensionRange] = useState({ min: 0, max: 100 });
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [useGrid, setUseGrid] = useState(true);
-  const [videoWords, setVideoWords] = useState<string[]>([]);
+  const [videoWords, setVideoWords] = useState<{ id: number; text: string }[]>([]);
   const [videoWordsLoading, setVideoWordsLoading] = useState(false);
   const [videos, setVideos] = useState<VideoWithScore[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
@@ -134,7 +134,8 @@ export default function VideosPage() {
       setVideoWordsLoading(true);
       try {
         const wordsData = await getVideoWords(selected.video.id);
-        setVideoWords(wordsData.map((w: { text: string }) => w.text));
+        console.log(wordsData);
+        setVideoWords(wordsData.map((w: { id: number; text: string }) => ({ id: w.id, text: w.text })));
       } catch (err) {
         console.error('Failed to fetch words', err);
         setVideoWords([]);
