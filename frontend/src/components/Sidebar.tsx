@@ -67,7 +67,10 @@ export default function Sidebar() {
             </button>
           </>
         ) : (
-          <Link href="/login" className={linkClass('/login')}>Log In</Link>
+          <>
+            <Link href="/signup" className={linkClass('/signup')}>Sign Up</Link>
+            <Link href="/login" className={linkClass('/login')}>Log In</Link>
+          </>
         )}
       </nav>
     </div>

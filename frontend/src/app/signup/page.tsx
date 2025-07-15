@@ -34,7 +34,7 @@ export default function SignupPage() {
 
     try {
       await signupUser(formData);
-      router.push('/login');
+      router.push('/login?next=/account/setup');
     } catch (err: any) {
       setError(err.message || 'Signup failed');
     } finally {
@@ -79,7 +79,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition"
+          className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition cursor-pointer"
         >
           {loading ? 'Creating account...' : 'Sign Up'}
         </button>

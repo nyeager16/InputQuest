@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Checkbox from '@/components/Checkbox';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { FlashcardListProps } from '@/types/types';
@@ -86,6 +87,15 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
 
   return (
     <div className="w-64 h-full overflow-y-auto p-2 bg-gray-100">
+      <div className="mb-2">
+        <Link
+          href="/account/setup/vocab"
+          className="block w-full text-center text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded cursor-pointer"
+        >
+          Add Vocab
+        </Link>
+      </div>
+
       <div className="flex justify-between items-center mb-2 gap-2">
         <button
           className="text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded hover:bg-blue- cursor-pointer"

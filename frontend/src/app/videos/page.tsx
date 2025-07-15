@@ -21,7 +21,7 @@ export default function VideosPage() {
   const [comprehensionRange, setComprehensionRange] = useState({ min: 0, max: 100 });
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [useGrid, setUseGrid] = useState(true);
-  const [videoWords, setVideoWords] = useState<string[]>([]);
+  const [videoWords, setVideoWords] = useState<{ id: number; text: string }[]>([]);
   const [videoWordsLoading, setVideoWordsLoading] = useState(false);
   const [videos, setVideos] = useState<VideoWithScore[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
@@ -134,7 +134,8 @@ export default function VideosPage() {
       setVideoWordsLoading(true);
       try {
         const wordsData = await getVideoWords(selected.video.id);
-        setVideoWords(wordsData.map((w: { text: string }) => w.text));
+        console.log(wordsData);
+        setVideoWords(wordsData.map((w: { id: number; text: string }) => ({ id: w.id, text: w.text })));
       } catch (err) {
         console.error('Failed to fetch words', err);
         setVideoWords([]);
@@ -293,15 +294,24 @@ export default function VideosPage() {
                       </div>
                     ) : (
                       <>
-                        <VideoWordTags words={videoWords} />
+                        <VideoWordTags
+                          words={videoWords}
+                          onWordAdded={(id) => setVideoWords((prev) => prev.filter((w) => w.id !== id))}
+                        />
                         <div className="pt-4 space-y-4" style={{ maxWidth: '900px' }}>
                           {questionLoading ? (
                             <div className="flex justify-center items-center py-6">
                               <LoadingSpinner size={4} color="text-black" />
                             </div>
                           ) : questions.length === 0 ? (
-                            <button onClick={handleGenerateQuestions} className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100 cursor-pointer">
-                              Generate Questions
+                            <button
+                              onClick={userPrefs ? handleGenerateQuestions : undefined}
+                              disabled={!userPrefs}
+                              className={`w-full max-w-full border rounded px-4 py-2 text-sm shadow ${
+                                userPrefs ? 'bg-white hover:bg-gray-100 cursor-pointer' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
+                            >
+                              {userPrefs ? 'Generate Questions' : 'Sign in to Generate Questions'}
                             </button>
                           ) : (
                             <div className="space-y-4">
