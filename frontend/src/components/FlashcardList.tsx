@@ -92,7 +92,7 @@ const FlashcardList: React.FC<FlashcardListProps> = ({
           href="/account/setup/vocab"
           className="block w-full text-center text-sm text-white bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded cursor-pointer"
         >
-          Bulk Add
+          Add Vocab
         </Link>
       </div>
 

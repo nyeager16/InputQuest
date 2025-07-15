@@ -294,15 +294,24 @@ export default function VideosPage() {
                       </div>
                     ) : (
                       <>
-                        <VideoWordTags words={videoWords} />
+                        <VideoWordTags
+                          words={videoWords}
+                          onWordAdded={(id) => setVideoWords((prev) => prev.filter((w) => w.id !== id))}
+                        />
                         <div className="pt-4 space-y-4" style={{ maxWidth: '900px' }}>
                           {questionLoading ? (
                             <div className="flex justify-center items-center py-6">
                               <LoadingSpinner size={4} color="text-black" />
                             </div>
                           ) : questions.length === 0 ? (
-                            <button onClick={handleGenerateQuestions} className="w-full max-w-full border rounded px-4 py-2 text-sm shadow bg-white hover:bg-gray-100 cursor-pointer">
-                              Generate Questions
+                            <button
+                              onClick={userPrefs ? handleGenerateQuestions : undefined}
+                              disabled={!userPrefs}
+                              className={`w-full max-w-full border rounded px-4 py-2 text-sm shadow ${
+                                userPrefs ? 'bg-white hover:bg-gray-100 cursor-pointer' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
+                            >
+                              {userPrefs ? 'Generate Questions' : 'Sign in to Generate Questions'}
                             </button>
                           ) : (
                             <div className="space-y-4">

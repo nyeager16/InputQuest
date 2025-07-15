@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loginUser } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
+import Link from 'next/link';
 
 export default function LoginClient() {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -79,6 +80,10 @@ export default function LoginClient() {
         >
           Log In
         </button>
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Don&apos;t have an account?{' '}
+          Sign up <Link href="/signup" className="text-blue-600 hover:underline">here</Link>.
+        </p>
       </form>
     </div>
   );

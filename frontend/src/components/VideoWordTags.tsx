@@ -5,9 +5,10 @@ import { addUserWords } from '@/lib/api';
 
 interface VideoWordTagsProps {
   words: { id: number; text: string }[];
+  onWordAdded: (id: number) => void;
 }
 
-export default function VideoWordTags({ words }: VideoWordTagsProps) {
+export default function VideoWordTags({ words, onWordAdded }: VideoWordTagsProps) {
   const [selectedWordId, setSelectedWordId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,6 +23,7 @@ export default function VideoWordTags({ words }: VideoWordTagsProps) {
     setLoading(true);
     try {
       await addUserWords([selectedWordId]);
+      onWordAdded(selectedWordId);
       setSelectedWordId(null);
     } catch (error) {
       console.error('Failed to add word:', error);
@@ -60,9 +62,9 @@ export default function VideoWordTags({ words }: VideoWordTagsProps) {
             <button
               onClick={handleAddWord}
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 cursor-pointer"
             >
-              {loading ? 'Adding...' : `Add Word: "${selectedWord.text}"`}
+              {loading ? 'Adding...' : `Add Word`}
             </button>
           </div>
         )}
