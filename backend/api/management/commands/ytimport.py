@@ -5,7 +5,12 @@ import scrapetube
 import stanza
 import re
 from django.core.management.base import BaseCommand
-from api.models import Word, Channel, Video, Sentence, WordInstance, Language, UserVideo, User
+from django.db import transaction
+from api.models import (
+    Word, Channel, Video, Sentence, WordInstance, Language, UserVideo, User,
+    WordSet, WordSetVideoScore
+)
+from api.utils import store_wordset_video_scores
 
 nlp = stanza.Pipeline("pl", processors="tokenize,pos", tokenize_pretokenized=True)
 
@@ -117,6 +122,103 @@ def extract_sentences(transcript_data, video, word_threshold=15):
         ))
     return sentence_list
 
+def calculate_score_for_video(video, word_ids):
+    related_root_word_ids = set(
+        Word.objects.filter(root_id__in=word_ids).values_list('id', flat=True)
+    )
+    all_matched_ids = word_ids | related_root_word_ids
+
+    total_instances = WordInstance.objects.filter(video=video).count()
+    if total_instances == 0:
+        return 0
+
+    matched_count = WordInstance.objects.filter(
+        video=video,
+        word_id__in=all_matched_ids
+    ).count()
+
+    return round((matched_count / total_instances) * 100)
+
+def update_wordset_scores_for_new_videos(new_videos):
+    """
+    For each WordSet, compute and insert missing video scores for new_videos.
+    Does not overwrite or delete existing scores.
+    """
+    for wordset in WordSet.objects.iterator():
+        word_ids = set(wordset.words.values_list('id', flat=True))
+        if not word_ids:
+            continue
+
+        # Get existing scored video_ids for this wordset
+        existing_video_ids = set(
+            WordSetVideoScore.objects.filter(
+                word_set=wordset,
+                video__in=new_videos
+            ).values_list('video_id', flat=True)
+        )
+
+        # Identify videos that still need scoring
+        videos_to_score = [video for video in new_videos if video.id not in existing_video_ids]
+        if not videos_to_score:
+            continue
+
+        new_scores = []
+        for video in videos_to_score:
+            score = calculate_score_for_video(video, word_ids)
+            new_scores.append(WordSetVideoScore(
+                word_set=wordset,
+                video=video,
+                score=score
+            ))
+
+        if new_scores:
+            with transaction.atomic():
+                WordSetVideoScore.objects.bulk_create(new_scores, batch_size=500)
+
+def update_user_video_scores_for_new_videos(new_videos):
+    users = User.objects.select_related('userpreferences').all()
+
+    for user in users:
+        prefs = getattr(user, 'userpreferences', None)
+        if not prefs or not prefs.word_set:
+            continue  # Skip users with no preferences or word set
+
+        word_set = prefs.word_set
+
+        # Get relevant video scores for the user's word set and new videos
+        wsvs = WordSetVideoScore.objects.filter(
+            word_set=word_set,
+            video__in=new_videos
+        ).values_list('video_id', 'score')
+
+        score_map = dict(wsvs)
+        if not score_map:
+            continue
+
+        existing_uv = UserVideo.objects.filter(
+            user=user,
+            video_id__in=score_map.keys()
+        )
+        existing_uv_map = {uv.video_id: uv for uv in existing_uv}
+
+        to_create = []
+        to_update = []
+
+        for video_id, score in score_map.items():
+            if video_id in existing_uv_map:
+                uv = existing_uv_map[video_id]
+                if uv.score != score:
+                    uv.score = score
+                    to_update.append(uv)
+            else:
+                to_create.append(UserVideo(user=user, video_id=video_id, score=score))
+
+        with transaction.atomic():
+            if to_create:
+                UserVideo.objects.bulk_create(to_create, batch_size=500)
+            if to_update:
+                UserVideo.objects.bulk_update(to_update, ['score'], batch_size=500)
+
 class Command(BaseCommand):
     help = "Imports data into the Word, Channel, Video, and WordInstance models"
 
@@ -130,7 +232,9 @@ class Command(BaseCommand):
 
         language_object = Language.objects.get(abb=language)
 
+        video_batch_size = 10
         videos = []
+        new_videos = []
         sentences = []
         wordinstances = []
 
@@ -161,6 +265,7 @@ class Command(BaseCommand):
             vid = Video(url=videoID, title=title, channel=channel, 
                                 language=language_object, auto_generated=auto)
             videos.append(vid)
+            new_videos.append(vid)
             sentence_list = extract_sentences(tr, vid)
             sentences.extend(sentence_list)
             for sec in tr:
@@ -228,7 +333,7 @@ class Command(BaseCommand):
                 elif language == 'de':
 
                     return
-            if j % 10 == 0 and j > 0:
+            if j % video_batch_size == 0 and j > 0:
                 Video.objects.bulk_create(videos)
                 Sentence.objects.bulk_create(sentences)
                 WordInstance.objects.bulk_create(wordinstances)
@@ -239,10 +344,8 @@ class Command(BaseCommand):
         Sentence.objects.bulk_create(sentences)
         WordInstance.objects.bulk_create(wordinstances)
 
-        users = User.objects.all()
-        for user in users:
-            user_videos_to_create = [UserVideo(user=user,video=video) for video in videos]
-            UserVideo.objects.bulk_create(user_videos_to_create)
+        update_wordset_scores_for_new_videos(new_videos)
+        update_user_video_scores_for_new_videos(new_videos)
 
 '''
 poetry run python manage.py ytimport "https://www.youtube.com/@EasyPolish" "pl"

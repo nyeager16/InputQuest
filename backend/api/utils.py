@@ -85,20 +85,20 @@ def store_wordset_video_scores(word_ids: set, video_scores: list[tuple[int, int]
         if created:
             word_set.words.set(sorted_ids)
 
-        # Prepare the video score objects
-        video_score_objects = []
-        for video_id, score in video_scores:
-            video_score_objects.append(WordSetVideoScore(
-                word_set=word_set,
-                video_id=video_id,
-                score=score
-            ))
+        existing_video_ids = set(
+            WordSetVideoScore.objects
+            .filter(word_set=word_set)
+            .values_list('video_id', flat=True)
+        )
 
-        # Avoid duplicates
-        WordSetVideoScore.objects.filter(word_set=word_set).delete()
+        to_create = [
+            WordSetVideoScore(word_set=word_set, video_id=vid, score=score)
+            for vid, score in video_scores if vid not in existing_video_ids
+        ]
 
-        # Bulk create new ones
-        WordSetVideoScore.objects.bulk_create(video_score_objects)
+        if to_create:
+            WordSetVideoScore.objects.bulk_create(to_create, batch_size=1000)
+        
         return word_set
 
 def generate_video_score_list(word_ids):
