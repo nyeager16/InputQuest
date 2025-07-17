@@ -309,7 +309,7 @@ export default function VocabPage() {
             <div className="flex-1 overflow-auto text-sm text-gray-700">
               {isSearching ? (
                 <div className="flex justify-center items-center h-full text-gray-400">
-                  <LoadingSpinner size={4} />
+                  <LoadingSpinner size={24} />
                 </div>
               ) : searchResults.length === 0 ? (
                 <p className="text-gray-400 italic">Search results will appear here...</p>

@@ -63,7 +63,7 @@ export default function SetupPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <LoadingSpinner size={8} color="text-black" />
+        <LoadingSpinner size={36} color="text-black" />
       </div>
     );
   }

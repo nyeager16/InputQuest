@@ -107,7 +107,7 @@ export default function MyVocabPage() {
           <div>
             <h2 className="text-xl font-semibold mb-2">{selectedCard.word.text}</h2>
             {loadingDef ? (
-              <LoadingSpinner size={4} color="text-white" />
+              <LoadingSpinner size={24} color="text-white" />
             ) : error ? (
               <p className="text-red-500">{error}</p>
             ) : (

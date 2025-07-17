@@ -347,7 +347,7 @@ def video_words(request, video_id):
             word_id__in=known_word_ids
         )
 
-    # Count frequencies of root words efficiently in the DB
+    # Count frequencies of root words
     root_counts = (
         word_instances
         .values('root_word_id')
@@ -532,15 +532,25 @@ def common_words(request):
     return Response(serializer.data)
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def search_words(request):
     term = request.data.get('term', 10)
     exclude_ids = request.data.get('exclude', [])
     language_id = request.data.get('language', 1)
-    try:
+
+    if language_id == 0:
+        language = Language.objects.get(abb='pl')
+    else:
         language = Language.objects.get(id=language_id)
-    except:
-        return Response({"error": "Language not found"}, status=404)
+
+    if isinstance(term, str) and term.isdigit():
+        try:
+            word = Word.objects.get(id=int(term), language=language)
+            serializer = WordSerializer(word)
+            return Response([serializer.data])
+        except Word.DoesNotExist:
+            return Response([], status=200)
+
     existing_word_ids = list(
         UserWord.objects.filter(user=request.user)
         .values_list('word_id', flat=True)

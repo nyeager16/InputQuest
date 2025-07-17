@@ -191,7 +191,7 @@ export default function VideosPage() {
     <div ref={containerRef} className="flex h-full relative select-none">
       {prefsLoading ? (
         <div className="flex justify-center items-center h-full w-full">
-          <LoadingSpinner size={8} color="text-black" />
+          <LoadingSpinner size={36} color="text-black" />
         </div>
       ) : (
         <>
@@ -290,18 +290,19 @@ export default function VideosPage() {
                     <h2 className="text-base font-semibold">{selected.video.title}</h2>
                     {videoWordsLoading ? (
                       <div className="flex justify-center items-center py-6">
-                        <LoadingSpinner size={4} color="text-black" />
+                        <LoadingSpinner size={24} color="text-black" />
                       </div>
                     ) : (
                       <>
                         <VideoWordTags
                           words={videoWords}
                           onWordAdded={(id) => setVideoWords((prev) => prev.filter((w) => w.id !== id))}
+                          userPrefs={userPrefs}
                         />
                         <div className="pt-4 space-y-4" style={{ maxWidth: '900px' }}>
                           {questionLoading ? (
                             <div className="flex justify-center items-center py-6">
-                              <LoadingSpinner size={4} color="text-black" />
+                              <LoadingSpinner size={24} color="text-black" />
                             </div>
                           ) : questions.length === 0 ? (
                             <button
@@ -347,7 +348,7 @@ export default function VideosPage() {
                                 }} className="mt-4 w-full border rounded px-4 py-2 text-sm shadow bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50" disabled={submitting}>
                                   {submitting ? (
                                     <div className="flex justify-center">
-                                      <LoadingSpinner size={4} color="text-black" />
+                                      <LoadingSpinner size={24} color="text-black" />
                                     </div>
                                   ) : (
                                     'Submit Answers'

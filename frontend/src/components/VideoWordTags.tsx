@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import { addUserWords } from '@/lib/api';
+import Link from 'next/link';
+import type { UserPreferences } from '@/context/UserPreferencesContext';
 
 interface VideoWordTagsProps {
   words: { id: number; text: string }[];
   onWordAdded: (id: number) => void;
+  userPrefs: UserPreferences | null;
 }
 
-export default function VideoWordTags({ words, onWordAdded }: VideoWordTagsProps) {
+export default function VideoWordTags({ words, onWordAdded, userPrefs }: VideoWordTagsProps) {
   const [selectedWordId, setSelectedWordId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,11 +23,13 @@ export default function VideoWordTags({ words, onWordAdded }: VideoWordTagsProps
 
   const handleAddWord = async () => {
     if (selectedWordId === null) return;
+
+    onWordAdded(selectedWordId);
+    setSelectedWordId(null);
     setLoading(true);
+
     try {
       await addUserWords([selectedWordId]);
-      onWordAdded(selectedWordId);
-      setSelectedWordId(null);
     } catch (error) {
       console.error('Failed to add word:', error);
       alert('Error adding word');
@@ -58,14 +63,30 @@ export default function VideoWordTags({ words, onWordAdded }: VideoWordTagsProps
         </div>
 
         {selectedWord && (
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mt-4 flex-wrap gap-2">
             <button
               onClick={handleAddWord}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-medium rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 cursor-pointer"
+              disabled={!userPrefs || loading}
+              className={`px-4 py-2 text-sm font-medium rounded ${
+                userPrefs
+                  ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              } disabled:opacity-50`}
             >
-              {loading ? 'Adding...' : `Add Word`}
+              {loading && userPrefs
+                ? 'Adding...'
+                : userPrefs
+                ? 'Add Word'
+                : 'Sign in to Add Words'}
             </button>
+            <Link
+              href={`/learn?search=${selectedWordId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 text-sm font-medium rounded bg-green-600 text-white hover:bg-green-700 transition"
+            >
+              Learn
+            </Link>
           </div>
         )}
 

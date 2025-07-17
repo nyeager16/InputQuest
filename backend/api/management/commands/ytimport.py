@@ -10,7 +10,6 @@ from api.models import (
     Word, Channel, Video, Sentence, WordInstance, Language, UserVideo, User,
     WordSet, WordSetVideoScore
 )
-from api.utils import store_wordset_video_scores
 
 nlp = stanza.Pipeline("pl", processors="tokenize,pos", tokenize_pretokenized=True)
 

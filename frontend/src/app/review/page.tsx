@@ -73,7 +73,7 @@ export default function ReviewPage() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-screen">
-        <LoadingSpinner size={8} color="text-black" />
+        <LoadingSpinner size={36} color="text-black" />
       </div>
     );
   

@@ -1,10 +1,16 @@
 'use client';
 
-export default function LoadingSpinner({ size = 5, color = 'text-gray-500' }: { size?: number; color?: string }) {
-  const classes = `animate-spin h-${size} w-${size} ${color}`;
+export default function LoadingSpinner({
+  size = 20,
+  color = 'text-gray-500'
+}: {
+  size?: number;
+  color?: string;
+}) {
   return (
     <svg
-      className={classes}
+      className={`animate-spin ${color}`}
+      style={{ width: size, height: size }}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
