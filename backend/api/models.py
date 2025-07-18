@@ -144,4 +144,5 @@ class UserPreferences(models.Model):
     max_clip_length = models.IntegerField(default=300)
     learn_hide_vocab = models.BooleanField(default=False)
     grid_view = models.BooleanField(default=False)
+    left_width_percent = models.FloatField(default=66.66)
     setup_complete = models.BooleanField(default=False)

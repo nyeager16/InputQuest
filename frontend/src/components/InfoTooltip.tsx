@@ -1,36 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Info } from 'lucide-react';
 
-type ScoreBoxProps = {
-  score: number;
+type InfoTooltipProps = {
+  message: string;
 };
 
-export default function ScoreBox({ score }: ScoreBoxProps) {
+export default function InfoTooltip({ message }: InfoTooltipProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-  const tooltipText = `${score}% of words in this video are saved in My Vocab`;
+  const ref = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (showTooltip && ref.current) {
       const rect = ref.current.getBoundingClientRect();
       setTooltipPos({
-        top: rect.top + window.scrollY - 32,
-        left: rect.left + rect.width / 2 + window.scrollX,
+        top: rect.top + rect.height / 2 + window.scrollY,
+        left: rect.right + 8 + window.scrollX, // 8px offset to the right
       });
     }
   }, [showTooltip]);
 
   return (
     <>
-      <div
+      <button
         ref={ref}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="min-w-[40px] px-2 py-1 text-xs text-center rounded bg-gray-100 text-gray-700 shadow-sm"
+        className="ml-2 text-gray-500 hover:text-gray-800"
       >
-        {score}
-      </div>
+        <Info className="w-5 h-5" />
+      </button>
 
       {showTooltip && tooltipPos &&
         createPortal(
@@ -39,12 +39,13 @@ export default function ScoreBox({ score }: ScoreBoxProps) {
               position: 'absolute',
               top: tooltipPos.top,
               left: tooltipPos.left,
-              transform: 'translateX(-50%)',
+              transform: 'translateY(-50%)',
               zIndex: 1000,
+              whiteSpace: 'nowrap',
             }}
             className="px-3 py-1 text-xs text-gray-800 bg-white border border-gray-200 rounded shadow-sm"
           >
-            {tooltipText}
+            {message}
           </div>,
           document.body
         )}

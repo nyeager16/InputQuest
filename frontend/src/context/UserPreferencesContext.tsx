@@ -17,6 +17,7 @@ export type UserPreferences = {
   grid_view: boolean;
   user: number;
   word_set: number;
+  left_width_percent: number;
   setup_complete: boolean;
 };
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import InfoTooltip from '@/components/InfoTooltip';
 
 type Props = {
   label?: string;
@@ -86,6 +87,7 @@ export default function BoundedNumberRangeInput({
         onBlur={commitMax}
         onKeyDown={(e) => e.key === 'Enter' && commitMax()}
       />
+      <InfoTooltip message="Set your target comprehension range. Videos will be filtered to match this level." />
     </div>
   );
 }

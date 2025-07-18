@@ -377,7 +377,7 @@ export default function LearnPage() {
     <div className="flex flex-col items-center px-4 py-4">
       <div className="w-full max-w-5xl">
         {/* Search */}
-        <div className="mt-4 mb-2 flex justify-center w-full">
+        <div className="mb-2 flex justify-center w-full">
           <div className="flex items-center gap-2 w-full max-w-md">
             <input
               type="text"
@@ -388,7 +388,7 @@ export default function LearnPage() {
                   handleSearch(searchTerm);
                 }
               }}
-              placeholder="Search words"
+              placeholder="Search..."
               className="border rounded px-4 py-2 w-full text-sm shadow-sm"
             />
             <button

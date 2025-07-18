@@ -8,6 +8,7 @@ import { useUserPreferences } from '@/context/UserPreferencesContext';
 import VideoWordTags from '@/components/VideoWordTags';
 import BoundedNumberRangeInput from '@/components/BoundedNumberRangeInput';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { LayoutGrid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const GENRES = ['All', 'Travel', 'History', 'Geography', 'Science', 'Technology', 'Conversation', 'News', 'Sports'];
 
@@ -47,9 +48,11 @@ export default function VideosPage() {
         max: userPrefs.comprehension_level_max,
       });
       setUseGrid(userPrefs.grid_view);
+      setLeftWidthPercent(userPrefs.left_width_percent ?? 66.66);
     } else {
       setComprehensionRange({ min: 0, max: 100 });
       setUseGrid(true);
+      setLeftWidthPercent(66.66);
     }
   }, [userPrefs, prefsLoading]);
 
@@ -86,6 +89,13 @@ export default function VideosPage() {
     }
     doFetchVideos(params);
   }, [nextPage, comprehensionRange.min, comprehensionRange.max, loading, videos.length]);
+
+  const handleGenreSelect = (genre: string) => {
+    setSelectedGenre(genre);
+    setVideos([]);
+    setNextPage(null);
+    setReadyToFetch(true);
+  };
 
   useEffect(() => {
     if (prefsLoading) return;
@@ -134,7 +144,6 @@ export default function VideosPage() {
       setVideoWordsLoading(true);
       try {
         const wordsData = await getVideoWords(selected.video.id);
-        console.log(wordsData);
         setVideoWords(wordsData.map((w: { id: number; text: string }) => ({ id: w.id, text: w.text })));
       } catch (err) {
         console.error('Failed to fetch words', err);
@@ -163,6 +172,10 @@ export default function VideosPage() {
     isResizing.current = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+    
+    if (userPrefs && leftWidthPercent !== userPrefs.left_width_percent) {
+      updatePref({ left_width_percent: leftWidthPercent });
+    }
   };
 
   const startResizing = () => {
@@ -207,7 +220,13 @@ export default function VideosPage() {
                     onChange={({ min, max }) => {
                       const changed = min !== comprehensionRange.min || max !== comprehensionRange.max;
                       setComprehensionRange({ min, max });
-                      if (changed) updatePref({ comprehension_level_min: min, comprehension_level_max: max });
+                      if (changed) {
+                        updatePref({ comprehension_level_min: min, comprehension_level_max: max });
+
+                        setVideos([]);
+                        setNextPage(null);
+                        setReadyToFetch(true);
+                      }
                     }}
                   />
                   <div className="flex items-center gap-2">
@@ -220,12 +239,20 @@ export default function VideosPage() {
                         console.error('Failed to update grid_view', err);
                         setUseGrid(!newGridState);
                       }
-                    }} className="text-sm px-2 py-1 border rounded bg-white shadow cursor-pointer">
-                      {useGrid ? 'List View' : 'Grid View'}
-                    </button>
+                    }}
+                    className="p-2 border rounded bg-white shadow cursor-pointer hover:bg-gray-100"
+                    title={useGrid ? 'List View' : 'Grid View'}
+                  >
+                    {useGrid ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+                  </button>
                     {showRight && (
-                      <button onClick={handleHideLeft} disabled={!selected} className="text-sm px-2 py-1 border rounded bg-white shadow disabled:opacity-50 cursor-pointer">
-                        Hide
+                      <button
+                        onClick={handleHideLeft}
+                        disabled={!selected}
+                        className="p-2 border rounded bg-white shadow disabled:opacity-50 cursor-pointer hover:bg-gray-100"
+                        title="Hide Videos"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -236,7 +263,7 @@ export default function VideosPage() {
                       {GENRES.map((genre) => (
                         <div
                           key={genre}
-                          onClick={() => setSelectedGenre(genre)}
+                          onClick={() => handleGenreSelect(genre)}
                           className={`text-xs px-3 py-1 rounded-full whitespace-nowrap cursor-pointer select-none ${
                             selectedGenre === genre ? 'bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
                           }`}
@@ -299,7 +326,10 @@ export default function VideosPage() {
                           onWordAdded={(id) => setVideoWords((prev) => prev.filter((w) => w.id !== id))}
                           userPrefs={userPrefs}
                         />
-                        <div className="pt-4 space-y-4" style={{ maxWidth: '900px' }}>
+                        <div className="space-y-4" style={{ maxWidth: '900px' }}>
+                          <h3 className="text-base font-medium text-center text-gray-800 mb-4">
+                            Test Your Comprehension
+                          </h3>
                           {questionLoading ? (
                             <div className="flex justify-center items-center py-6">
                               <LoadingSpinner size={24} color="text-black" />
@@ -308,11 +338,11 @@ export default function VideosPage() {
                             <button
                               onClick={userPrefs ? handleGenerateQuestions : undefined}
                               disabled={!userPrefs}
-                              className={`w-full max-w-full border rounded px-4 py-2 text-sm shadow ${
-                                userPrefs ? 'bg-white hover:bg-gray-100 cursor-pointer' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              className={`w-full max-w-full rounded px-4 py-2 text-sm ${
+                                userPrefs ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer' : 'bg-gray-200 text-gray-500'
                               }`}
                             >
-                              {userPrefs ? 'Generate Questions' : 'Sign in to Generate Questions'}
+                              {userPrefs ? 'Generate Questions' : 'Log in to Generate Questions'}
                             </button>
                           ) : (
                             <div className="space-y-4">
@@ -345,7 +375,7 @@ export default function VideosPage() {
                                   } finally {
                                     setSubmitting(false);
                                   }
-                                }} className="mt-4 w-full border rounded px-4 py-2 text-sm shadow bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50" disabled={submitting}>
+                                }} className="mb-4 w-full border rounded px-4 py-2 text-sm shadow bg-blue-500 text-white hover:bg-blue-600 cursor-pointer disabled:opacity-50" disabled={submitting}>
                                   {submitting ? (
                                     <div className="flex justify-center">
                                       <LoadingSpinner size={24} color="text-black" />
@@ -368,8 +398,12 @@ export default function VideosPage() {
             </div>
           )}
           {!showLeft && (
-            <button onClick={() => setShowLeft(true)} className="absolute top-2 left-4 z-20 bg-white border rounded px-2 py-1 text-sm shadow cursor-pointer">
-              Show List
+            <button
+              onClick={() => setShowLeft(true)}
+              className="absolute top-2 left-2 z-20 bg-white border rounded p-2 shadow cursor-pointer hover:bg-gray-100"
+              title="Show Video List"
+            >
+              <ChevronRight className="w-5 h-5" />
             </button>
           )}
         </>
