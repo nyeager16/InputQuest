@@ -58,6 +58,7 @@ export default function LearnPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [committedSearchTerm, setCommittedSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Word[]>([]);
+  const hasPerformedSearch = useRef(false);
 
   const observerRef = useRef<HTMLDivElement | null>(null);
   const playerRefs = useRef<{ [wordId: number]: YouTubePlayer }>({});
@@ -94,6 +95,8 @@ export default function LearnPage() {
   };
 
   const handleSearch = async (term: string) => {
+    hasPerformedSearch.current = true;
+
     const trimmed = term.trim();
     if (!trimmed) {
       setSearchResults([]);
@@ -129,16 +132,6 @@ export default function LearnPage() {
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const initialSearch = params.get('search');
-    if (initialSearch) {
-      setSearchTerm(initialSearch);
-      setCommittedSearchTerm(initialSearch);
-      handleSearch(initialSearch);
-    }
-  }, []);
-
-  useEffect(() => {
     if (searchResults.length > 0 && expandedWordId === null) {
       handleExpandWord(searchResults[0].id);
     }
@@ -162,7 +155,7 @@ export default function LearnPage() {
           setStopPagination(true);
         }
 
-        if (initialFiltered.length > 0) {
+        if (initialFiltered.length > 0 && !hasPerformedSearch.current) {
           handleExpandWord(initialFiltered[0].id);
         }
       } catch (err) {
@@ -174,6 +167,16 @@ export default function LearnPage() {
     };
 
     fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialSearch = params.get('search');
+    if (initialSearch) {
+      setSearchTerm(initialSearch);
+      setCommittedSearchTerm(initialSearch);
+      handleSearch(initialSearch);
+    }
   }, []);
 
   useEffect(() => {
