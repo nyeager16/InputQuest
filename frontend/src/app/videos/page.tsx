@@ -18,7 +18,7 @@ export default function VideosPage() {
   const [showLeft, setShowLeft] = useState(true);
   const [showRight, setShowRight] = useState(false);
   const [userResized, setUserResized] = useState(false);
-  const [leftWidthPercent, setLeftWidthPercent] = useState(100);
+  const [leftWidthPercent, setLeftWidthPercent] = useState(66.66);
   const [comprehensionRange, setComprehensionRange] = useState({ min: 0, max: 100 });
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [useGrid, setUseGrid] = useState(true);
@@ -41,7 +41,7 @@ export default function VideosPage() {
   const isResizing = useRef(false);
 
   useEffect(() => {
-    if (prefsLoading) return;
+    if (prefsLoading || userResized) return;
     if (userPrefs) {
       setComprehensionRange({
         min: userPrefs.comprehension_level_min,
@@ -54,7 +54,7 @@ export default function VideosPage() {
       setUseGrid(true);
       setLeftWidthPercent(66.66);
     }
-  }, [userPrefs, prefsLoading]);
+  }, [userPrefs, prefsLoading, userResized]);
 
   const doFetchVideos = async (params: URLSearchParams) => {
     const queryString = `?${params.toString()}`;
@@ -127,7 +127,13 @@ export default function VideosPage() {
     if (selected) {
       setShowRight(true);
       if (!showLeft) setShowLeft(true);
-      if (!userResized) setLeftWidthPercent(66.66);
+      if (!userResized) {
+        if (userPrefs) {
+          setLeftWidthPercent(userPrefs.left_width_percent ?? 66.66);
+        } else {
+          setLeftWidthPercent(66.66);
+        }
+      }
     } else {
       setShowRight(false);
     }
