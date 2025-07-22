@@ -3,16 +3,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import VideoList from '@/components/VideoList';
 import VideoGrid from '@/components/VideoGrid';
-import { VideoWithScore, getVideoWords, getVideos, getQuestions, submitAnswers } from '@/lib/api';
+import { VideoWithScore } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import VideoWordTags from '@/components/VideoWordTags';
 import BoundedNumberRangeInput from '@/components/BoundedNumberRangeInput';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { LayoutGrid, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 const GENRES = ['All', 'Travel', 'History', 'Geography', 'Science', 'Technology', 'Conversation', 'News', 'Sports'];
 
 export default function VideosPage() {
+  const api = useApiWithLogout();
   const { data: userPrefs, updatePref, loading: prefsLoading } = useUserPreferences();
   const [selected, setSelected] = useState<VideoWithScore | null>(null);
   const [showLeft, setShowLeft] = useState(true);
@@ -60,7 +62,7 @@ export default function VideosPage() {
     const queryString = `?${params.toString()}`;
     setLoading(true);
     try {
-      const data = await getVideos(queryString);
+      const data = await api.getVideos(queryString);
       setVideos((prev) => {
         const existingIds = new Set(prev.map((v) => v.video.id));
         const newUnique = data.results.filter((v) => !existingIds.has(v.video.id));
@@ -149,7 +151,7 @@ export default function VideosPage() {
       }
       setVideoWordsLoading(true);
       try {
-        const wordsData = await getVideoWords(selected.video.id);
+        const wordsData = await api.getVideoWords(selected.video.id);
         setVideoWords(wordsData.map((w: { id: number; text: string }) => ({ id: w.id, text: w.text })));
       } catch (err) {
         console.error('Failed to fetch words', err);
@@ -195,7 +197,7 @@ export default function VideosPage() {
     if (!selected) return;
     setQuestionLoading(true);
     try {
-      const q = await getQuestions(selected.video.id);
+      const q = await api.getQuestions(selected.video.id);
       setQuestions(q);
       setAnswers({});
     } catch (err) {
@@ -371,7 +373,7 @@ export default function VideosPage() {
                                   };
                                   setSubmitting(true);
                                   try {
-                                    const response = await submitAnswers(payload);
+                                    const response = await api.submitAnswers(payload);
                                     const parsed: { [id: number]: string } = {};
                                     for (const key in response) parsed[Number(key)] = response[key];
                                     setFeedback(parsed);

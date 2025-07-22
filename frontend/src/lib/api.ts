@@ -1,76 +1,77 @@
 import type { UserPreferences } from '@/context/UserPreferencesContext';
 import { fetchWithAuth } from './fetchWithAuth';
+import type { AnswerSubmission } from '@/types/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function getUser() {
+export async function getUser(logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch user data');
   return data;
 }
 
-export async function getUserPreferences() {
+export async function getUserPreferences(logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch user preferences');
   return data;
 }
 
 export async function updateUserPreferences(
-  updates: Partial<UserPreferences>
+  updates: Partial<UserPreferences>, logout?: () => void
 ) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/preferences/`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to update user preferences');
   return data;
 }
 
-export async function getUserWords(vocab_filter: number) {
+export async function getUserWords(vocab_filter: number, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/?vocab_filter=${vocab_filter}`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch user words');
   return data;
 }
 
-export async function getWordsLearn(pageOrUrl: number | string = 1) {
+export async function getWordsLearn(pageOrUrl: number | string = 1, logout?: () => void) {
   const url = typeof pageOrUrl === 'string'
     ? pageOrUrl
     : `${API_URL}/words/learn/?page=${pageOrUrl}`;
 
-  const { data, ok } = await fetchWithAuth(url, { method: 'GET' });
+  const { data, ok } = await fetchWithAuth(url, { method: 'GET' }, logout);
   if (!ok) throw new Error('Failed to fetch common words');
   return data;
 }
 
-export async function getUserReviews() {
+export async function getUserReviews(logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/reviews/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch user reviews');
   return data;
 }
 
-export async function submitReview(userWordId: number, rating: 0 | 1): Promise<void> {
+export async function submitReview(userWordId: number, rating: 0 | 1, logout?: () => void): Promise<void> {
   const { ok } = await fetchWithAuth(
     `${API_URL}/userwords/${userWordId}/update/${rating}/`,
     {
       method: 'PATCH',
-    }
+    }, logout
   );
   if (!ok) throw new Error('Failed to submit review');
 }
 
-export async function addUserWords(wordIds: number[]) {
+export async function addUserWords(wordIds: number[], logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/users/me/userwords/`, {
     method: 'POST',
     body: JSON.stringify({ word_ids: wordIds }),
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to add words');
   return data;
 }
@@ -80,7 +81,7 @@ export async function signupUser(formData: {
   email: string;
   password: string;
   password2: string;
-}) {
+},) {
   const res = await fetch(`${API_URL}/signup/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -140,31 +141,31 @@ export async function logoutUser(refreshToken: string) {
   return true;
 }
 
-export async function getDefinition(wordId: number) {
+export async function getDefinition(wordId: number, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch definition');
   return data;
 }
 
-export async function saveDefinition(wordId: number, text: string) {
+export async function saveDefinition(wordId: number, text: string, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/definitions/${wordId}/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
-  });
+  }, logout);
 
   if (!ok) throw new Error('Failed to save definition');
   return data;
 }
 
-export async function deleteUserWords(ids: number[]) {
+export async function deleteUserWords(ids: number[], logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/userwords/delete/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids }),
-  });
+  }, logout);
 
   if (!ok) throw new Error('Failed to save definition');
   return data;
@@ -189,69 +190,61 @@ export type PaginatedVideosResponse = {
   count: number;
 };
 
-export async function getVideos(queryString: string): Promise<PaginatedVideosResponse> {
+export async function getVideos(queryString: string, logout?: () => void): Promise<PaginatedVideosResponse> {
   const url = `${API_URL}/videos/${queryString}`;
 
-  const { data, ok } = await fetchWithAuth(url);
+  const { data, ok } = await fetchWithAuth(url, undefined, logout);
   if (!ok) throw new Error('Failed to fetch videos');
   return data;
 }
 
-export async function getVideoWords(videoId: number) {
+export async function getVideoWords(videoId: number, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/words/video/${videoId}/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch video words');
   return data;
 }
 
-export async function getQuestions(videoId: number) {
+export async function getQuestions(videoId: number, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/questions/video/${videoId}/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to fetch video questions');
   return data;
 }
 
-type AnswerSubmission = {
-  video_id: number;
-  answers: {
-    question_id: number;
-    text: string;
-  }[];
-};
-
-export async function submitAnswers(payload: AnswerSubmission) {
+export async function submitAnswers(payload: AnswerSubmission, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/answers/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-  });
+  }, logout);
 
   if (!ok) throw new Error('Failed to submit answers');
   return data;
 }
 
-export async function getConjugations(wordId: number) {
+export async function getConjugations(wordId: number, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/words/${wordId}/conjugations/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to get conjugations');
   return data;
 }
 
-export async function getLearnData(wordId: number) {
+export async function getLearnData(wordId: number, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/learn/${wordId}/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to get word data');
   return data;
 }
 
 export async function updateUserWordConjugations(
-  payload: { word_id: number; needs_review: boolean }[]
+  payload: { word_id: number; needs_review: boolean }[], logout?: () => void
 ) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/userwords/conjugations/`, {
     method: 'POST',
@@ -259,41 +252,41 @@ export async function updateUserWordConjugations(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-  });
+  }, logout);
 
   if (!ok) throw new Error('Failed to update conjugation userwords');
   return data;
 }
 
-export async function getLanguages() {
+export async function getLanguages(logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/languages/`, {
     method: 'GET',
-  });
+  }, logout);
   if (!ok) throw new Error('Failed to get languages');
   return data;
 }
 
-export async function getCommonWords(language: number, count: number, exclude: number[] = []) {
+export async function getCommonWords(language: number, count: number, exclude: number[] = [], logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/words/common/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ language, count, exclude }),
-  });
+  }, logout);
 
   if (!ok) throw new Error('Failed to get common words');
   return data;
 }
 
-export async function getSearchWords(language: number, exclude: number[] = [], term: string) {
+export async function getSearchWords(language: number, exclude: number[] = [], term: string, logout?: () => void) {
   const { data, ok } = await fetchWithAuth(`${API_URL}/words/search/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ language, exclude, term }),
-  });
+  }, logout);
 
   if (!ok) throw new Error('Failed to get search words');
   return data;

@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { getLanguages } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import type { Language } from '@/types/types';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 const EXPERIENCE_LEVELS = [
   { label: 'Beginner', words: 0 },
@@ -18,6 +18,7 @@ const EXPERIENCE_LEVELS = [
 ];
 
 export default function SetupPage() {
+  const api = useApiWithLogout();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLang, setSelectedLang] = useState<Language | null>(null);
@@ -32,7 +33,7 @@ export default function SetupPage() {
 
     const fetchLanguages = async () => {
       try {
-        const data = await getLanguages();
+        const data = await api.getLanguages();
         setLanguages(data);
 
         if (userPrefs.setup_complete) {

@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import { getWordsLearn, addUserWords, getConjugations, getLearnData, getSearchWords } from '@/lib/api';
 import YouTube from 'react-youtube';
 import type { YouTubePlayer } from 'react-youtube';
 import ConjugationTable from '@/components/ConjugationTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import PronunciationGuide from '@/components/PronunciationGuide';
 import type { Word, ConjugationCache, LearnData } from '@/types/types';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 const MAX_SEARCH_RESULTS = 5;
 
@@ -37,6 +37,7 @@ const POS_COLORS: { [label: string]: string } = {
 };
 
 export default function LearnPage() {
+  const api = useApiWithLogout();
   const { data: userPrefs } = useUserPreferences();
   const [words, setWords] = useState<Word[]>([]);
   const [selectedPOS, setSelectedPOS] = useState<string>('All');
@@ -72,7 +73,7 @@ export default function LearnPage() {
     if (newId && !conjugationCache[newId]) {
       try {
         setConjugationLoadingId(newId);
-        const data = await getConjugations(newId);
+        const data = await api.getConjugations(newId);
         setConjugationCache((prev) => ({ ...prev, [newId]: data }));
       } catch (err) {
         console.error('Failed to load conjugations', err);
@@ -83,7 +84,7 @@ export default function LearnPage() {
     if (!learnDataCache[newId]) {
       try {
         setLearnDataLoadingId(newId);
-        const learnData = await getLearnData(newId);
+        const learnData = await api.getLearnData(newId);
         setLearnDataCache((prev) => ({ ...prev, [newId]: learnData }));
         setVideoTimestamps((prev) => ({ ...prev, [newId]: 0 }));
       } catch (err) {
@@ -110,7 +111,7 @@ export default function LearnPage() {
 
     try {
       const language = userPrefs?.language?.id || 0;
-      const results = await getSearchWords(language, [], trimmed);
+      const results = await api.getSearchWords(language, [], trimmed);
       setSearchResults(results);
 
       if (results.length > 0) {
@@ -140,7 +141,7 @@ export default function LearnPage() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const data = await getWordsLearn();
+        const data = await api.getWordsLearn();
         const uniqueWords = data.results.filter((word: Word) => !words.some((w) => w.id === word.id));
         const combined = [...words, ...uniqueWords];
         setWords(combined);
@@ -185,7 +186,7 @@ export default function LearnPage() {
         if (entry.isIntersecting && nextPageUrl && !stopPagination) {
           try {
             const pageNum = parseInt(new URL(nextPageUrl, window.location.href).searchParams.get('page') || '1');
-            const data = await getWordsLearn(pageNum);
+            const data = await api.getWordsLearn(pageNum);
             const uniqueWords = data.results.filter((word: Word) => !words.some((w) => w.id === word.id));
             const combined = [...words, ...uniqueWords];
             setWords(combined);
@@ -239,7 +240,7 @@ export default function LearnPage() {
       return;
     }
     try {
-      await addUserWords([wordId]);
+      await api.addUserWords([wordId]);
       setWords((prevWords) => prevWords.filter((word) => word.id !== wordId));
     } catch {
       alert('Failed to add word');

@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signupUser } from '@/lib/api';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 export default function SignupPage() {
+  const api = useApiWithLogout();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -33,7 +34,7 @@ export default function SignupPage() {
     }
 
     try {
-      await signupUser(formData);
+      await api.signupUser(formData);
       router.push('/login?next=/account/setup');
     } catch (err: any) {
       setError(err.message || 'Signup failed');

@@ -1,9 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { updateUserWordConjugations } from '@/lib/api';
 import type { TableData, FormEntry, VerbTable, NounTable, AdjTable } from '@/types/types';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 const FlashcardConjugations: React.FC<{ data: TableData }> = ({ data }) => {
+  const api = useApiWithLogout();
   const { table_type, conjugation_table } = data;
   const [editMode, setEditMode] = useState(false);
   const [updatedWords, setUpdatedWords] = useState<Record<number, boolean>>({});
@@ -27,7 +28,7 @@ const FlashcardConjugations: React.FC<{ data: TableData }> = ({ data }) => {
     }));
 
     try {
-      await updateUserWordConjugations(payload);
+      await api.updateUserWordConjugations(payload);
       setEditMode(false);
       setUpdatedWords({});
     } catch (error) {

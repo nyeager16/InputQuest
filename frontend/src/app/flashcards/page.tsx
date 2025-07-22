@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import FlashcardList from '@/components/FlashcardList';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import FlashcardConjugations from '@/components/FlashcardConjugations';
-import { getUserWords, getDefinition, saveDefinition, deleteUserWords, getConjugations } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { WordCard, TableData } from '@/types/types';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 export default function MyVocabPage() {
+  const api = useApiWithLogout();
   const router = useRouter();
   const { data: userPrefs, loading: authLoading } = useUserPreferences();
 
@@ -33,7 +34,7 @@ export default function MyVocabPage() {
 
   const loadWords = async () => {
     try {
-      const words = await getUserWords(userPrefs?.vocab_filter ?? 0);
+      const words = await api.getUserWords(userPrefs?.vocab_filter ?? 0);
       setCards(words);
     } catch (err) {
       console.error('Error loading words:', err);
@@ -46,10 +47,10 @@ export default function MyVocabPage() {
     setError(null);
 
     try {
-      const def = await getDefinition(card.word.id);
+      const def = await api.getDefinition(card.word.id);
       setDefinition(def.text || '');
 
-      const conj = await getConjugations(card.word.id);
+      const conj = await api.getConjugations(card.word.id);
       setConjugationData(conj);
     } catch (err) {
       setError('Failed to load definition or conjugation.');
@@ -67,7 +68,7 @@ export default function MyVocabPage() {
     if (!selectedCard) return;
 
     try {
-      await saveDefinition(selectedCard.word.id, definition);
+      await api.saveDefinition(selectedCard.word.id, definition);
     } catch {
       alert('Failed to save definition.');
     }
@@ -84,7 +85,7 @@ export default function MyVocabPage() {
     }
 
     try {
-      await deleteUserWords(idsToDelete);
+      await api.deleteUserWords(idsToDelete);
     } catch (err) {
       console.error('Failed to delete words:', err);
       alert('Failed to delete some words. Please refresh.');

@@ -4,16 +4,17 @@ import { useEffect, useState, memo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { getCommonWords, addUserWords, getSearchWords } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import type { Word, WordGroup, FlattenedItem } from '@/types/types';
 import { getPOSLabel, POS_COLORS } from '@/lib/utils';
 import Checkbox from '@/components/Checkbox';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 const POS_ORDER = ['verb', 'noun', 'adj', 'adv', 'pron', 'prep', 'part', 'int', 'other'];
 
 export default function VocabPage() {
+  const api = useApiWithLogout();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: userPrefs, updatePref } = useUserPreferences();
@@ -73,7 +74,7 @@ export default function VocabPage() {
       if (!userPrefs?.language?.id || isNaN(wordCount)) return;
 
       try {
-        const data = await getCommonWords(userPrefs.language.id, wordCount, []);
+        const data = await api.getCommonWords(userPrefs.language.id, wordCount, []);
         setWordGroups([{ label: `Initial Batch: ${data.length} words`, words: data }]);
       } catch (error) {
         console.error('Failed to load words:', error);
@@ -92,7 +93,7 @@ export default function VocabPage() {
         group.words.map((word) => word.id)
       );
 
-      const results = await getSearchWords(userPrefs.language.id, existingIds, searchTerm.trim());
+      const results = await api.getSearchWords(userPrefs.language.id, existingIds, searchTerm.trim());
       setSearchResults(results);
     } catch (error) {
       console.error('Search failed:', error);
@@ -129,7 +130,7 @@ export default function VocabPage() {
     setIsAddingWords(true);
     try {
       const existingIds = wordGroups.flatMap((group) => group.words.map((w) => w.id));
-      const data = await getCommonWords(userPrefs.language.id, count, existingIds);
+      const data = await api.getCommonWords(userPrefs.language.id, count, existingIds);
       setWordGroups((prev) => [
         { label: `Added Batch: ${data.length} words`, words: data },
         ...prev,
@@ -157,7 +158,7 @@ export default function VocabPage() {
 
     setIsFinishing(true);
     try {
-      await addUserWords(allWordIds);
+      await api.addUserWords(allWordIds);
       await updatePref({ setup_complete: true });
       router.push('/videos');
     } catch (error) {

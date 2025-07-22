@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { getUserPreferences, updateUserPreferences } from '@/lib/api';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 export type UserPreferences = {
   id: number;
@@ -33,6 +33,7 @@ type ContextType = {
     }
   ) => Promise<void>;
   clearPrefs: () => void;
+  logout: () => void;
 };
 
 const UserPreferencesContext = createContext<ContextType>({
@@ -42,16 +43,18 @@ const UserPreferencesContext = createContext<ContextType>({
   setPrefs: () => {},
   updatePref: async () => {},
   clearPrefs: () => {},
+  logout: () => {},
 });
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
+  const api = useApiWithLogout();
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getUserPreferences();
+      const data = await api.getUserPreferences();
       setUserPrefs(data);
     } catch (e) {
       console.error('Failed to refresh preferences', e);
@@ -73,7 +76,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
   ) => {
     if (!userPrefs) return;
     try {
-      await updateUserPreferences(updates);
+      await api.updateUserPreferences(updates);
       const hasForeignKey = 'language_id' in updates || 'word_set_id' in updates;
       if (hasForeignKey) {
         await refresh(); // fetch fresh data with nested fields updated
@@ -89,9 +92,24 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     setUserPrefs(null);
   };
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+    setUserPrefs(null);
+    window.location.href = '/login';
+  }, []);
+
   return (
     <UserPreferencesContext.Provider
-      value={{ data: userPrefs, loading, refresh, setPrefs: setUserPrefs, updatePref, clearPrefs }}
+      value={{
+        data: userPrefs,
+        loading,
+        refresh,
+        setPrefs: setUserPrefs,
+        updatePref,
+        clearPrefs,
+        logout,
+      }}
     >
       {children}
     </UserPreferencesContext.Provider>

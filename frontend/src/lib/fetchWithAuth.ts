@@ -1,3 +1,4 @@
+
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 const inFlightRequests = new Map<string, Promise<{ data: any; ok: boolean; status: number }>>();
@@ -11,9 +12,12 @@ function onRefreshed(token: string) {
   refreshSubscribers = [];
 }
 
-async function refreshAccessToken(): Promise<string> {
+async function refreshAccessToken(logout?: () => void): Promise<string> {
   const refreshToken = localStorage.getItem('refresh');
-  if (!refreshToken) throw new Error('No refresh token available');
+  if (!refreshToken) {
+    if (logout) logout();
+    throw new Error('No refresh token available');
+  }
 
   if (isRefreshing) {
     return new Promise(resolve => subscribeTokenRefresh(resolve));
@@ -29,8 +33,7 @@ async function refreshAccessToken(): Promise<string> {
     });
 
     if (!res.ok) {
-      localStorage.removeItem('access');
-      localStorage.removeItem('refresh');
+      if (logout) logout();
       throw new Error('Failed to refresh token');
     }
 
@@ -45,7 +48,8 @@ async function refreshAccessToken(): Promise<string> {
 
 export async function fetchWithAuth(
   input: RequestInfo,
-  init: RequestInit = {}
+  init: RequestInit = {},
+  logout?: () => void
 ): Promise<{ data: any; ok: boolean; status: number }> {
   const key = typeof input === 'string' ? input : JSON.stringify(input);
 
@@ -68,7 +72,7 @@ export async function fetchWithAuth(
 
     if (response.status === 401 && accessToken) {
       try {
-        accessToken = await refreshAccessToken();
+        accessToken = await refreshAccessToken(logout);
         response = await fetch(input, {
           ...init,
           headers: {
@@ -79,6 +83,7 @@ export async function fetchWithAuth(
         });
       } catch (err) {
         console.error('Token refresh failed', err);
+        if (logout) logout();
         throw err;
       }
     }

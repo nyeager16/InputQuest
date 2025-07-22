@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { loginUser } from '@/lib/api';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import Link from 'next/link';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 export default function LoginClient() {
+  const api = useApiWithLogout();
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export default function LoginClient() {
     setLoading(true);
 
     try {
-      const userData = await loginUser(formData);
+      const userData = await api.loginUser(formData);
       localStorage.setItem('access', userData.token.access);
       localStorage.setItem('refresh', userData.token.refresh);
       await refresh();

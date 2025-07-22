@@ -96,3 +96,29 @@ export type FlattenedItem =
       groupIndex: number;
       wordIndex: number;
     };
+
+export type AnswerSubmission = {
+  video_id: number;
+  answers: {
+    question_id: number;
+    text: string;
+  }[];
+};
+
+export type UserPreferences = {
+  id: number;
+  language: { id: number; name: string; abb: string };
+  comprehension_level_min: number;
+  comprehension_level_max: number;
+  queue_CI: number;
+  desired_retention: number;
+  fsrs: boolean;
+  vocab_filter: number;
+  max_clip_length: number;
+  learn_hide_vocab: boolean;
+  grid_view: boolean;
+  user: number;
+  word_set: number;
+  left_width_percent: number;
+  setup_complete: boolean;
+};

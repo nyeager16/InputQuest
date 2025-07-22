@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
 import { useEffect, useState, useCallback } from 'react';
-import { getUserReviews, submitReview } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 type Flashcard = {
   id: number;
@@ -14,6 +14,7 @@ type Flashcard = {
 };
 
 export default function ReviewPage() {
+  const api = useApiWithLogout();
   const { data: userPrefs, loading: authLoading } = useUserPreferences();
   const router = useRouter();
 
@@ -31,7 +32,7 @@ export default function ReviewPage() {
   useEffect(() => {
     async function fetchFlashcards() {
       try {
-        const data = await getUserReviews();
+        const data = await api.getUserReviews();
         setFlashcards(data.words);
       } catch (err) {
         console.error(err);
@@ -51,7 +52,7 @@ export default function ReviewPage() {
     setCurrentIndex((prev) => prev + 1);
   
     // Submit in background
-    submitReview(current.id, rating).catch((error) => {
+    api.submitReview(current.id, rating).catch((error) => {
       console.error('Failed to submit review:', error);
     });
   }, [flashcards, currentIndex]);

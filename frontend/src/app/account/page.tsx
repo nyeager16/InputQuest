@@ -3,9 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useUserPreferences } from '@/context/UserPreferencesContext';
-import { getUser } from '@/lib/api';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 export default function AccountPage() {
+  const api = useApiWithLogout();
   const { data: userPrefs, loading: authLoading, updatePref } = useUserPreferences();
   const router = useRouter();
 
@@ -34,7 +35,7 @@ export default function AccountPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const data = await getUser();
+        const data = await api.getUser();
         setUserInfo(data);
       } catch (err) {
         console.error('Failed to fetch user info:', err);

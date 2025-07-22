@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { addUserWords } from '@/lib/api';
 import Link from 'next/link';
 import type { UserPreferences } from '@/context/UserPreferencesContext';
+import { useApiWithLogout } from '@/lib/useApiWithLogout';
 
 interface VideoWordTagsProps {
   words: { id: number; text: string }[];
@@ -12,6 +12,7 @@ interface VideoWordTagsProps {
 }
 
 export default function VideoWordTags({ words, onWordAdded, userPrefs }: VideoWordTagsProps) {
+  const api = useApiWithLogout();
   const [selectedWordId, setSelectedWordId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,7 @@ export default function VideoWordTags({ words, onWordAdded, userPrefs }: VideoWo
     setLoading(true);
 
     try {
-      await addUserWords([selectedWordId]);
+      await api.addUserWords([selectedWordId]);
     } catch (error) {
       console.error('Failed to add word:', error);
       alert('Error adding word');
